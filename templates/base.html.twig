@@ -46,10 +46,7 @@
                         <input type="text" placeholder="Search data...">
                     </div>
                     <div class="header-actions">
-                        <div class="notification-bell">
-                            <i class="fas fa-bell"></i>
-                            <span class="badge"></span>
-                        </div>
+                        {{ render(controller('App\\Controller\\NotificationController::renderHeader')) }}
                         <div class="user-profile">
                             <div class="user-info">
                                 <span class="user-name">{{ app.session.get('user_name', 'Guest') }}</span>

@@ -38,10 +38,14 @@ class Wallet
     #[ORM\OneToMany(mappedBy: 'wallet', targetEntity: ActivityLog::class, orphanRemoval: true)]
     private Collection $activityLogs;
 
+    #[ORM\OneToMany(mappedBy: 'wallet', targetEntity: Notification::class, orphanRemoval: true)]
+    private Collection $notifications;
+
     public function __construct()
     {
         $this->walletGoals = new ArrayCollection();
         $this->activityLogs = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -81,4 +85,9 @@ class Wallet
      * @return Collection<int, WalletGoal>
      */
     public function getWalletGoals(): Collection { return $this->walletGoals; }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection { return $this->notifications; }
 }

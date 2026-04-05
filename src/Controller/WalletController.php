@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\ActivityLog;
+use App\Entity\Notification;
 use App\Entity\Wallet;
 use App\Repository\ActivityLogRepository;
 use App\Repository\WalletRepository;
@@ -168,6 +169,13 @@ class WalletController extends AbstractController
         $entityManager->persist($log);
 
         $this->addFlash('success', $message);
+
+        // Système de Notifications
+        $notification = new Notification();
+        $notification->setWallet($wallet);
+        $notification->setMessage($message);
+        $notification->setType($logType);
+        $entityManager->persist($notification);
 
         // Alerte Solde Bas
         if ((float)$wallet->getBalance() < 50) {
