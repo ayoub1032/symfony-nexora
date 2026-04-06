@@ -1,0 +1,201 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}User Reputations - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'Manage User Reputations' : 'User Reputations' }}
+        </h1>
+        {% if app.session.get('role') == 'ADMIN' %}
+        <button class="btn btn-primary" onclick="document.getElementById('addReputationModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Record
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-star"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Records</span>
+                <span class="stat-value">{{ activeCount }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Reputation Database</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Completed</th>
+                        <th>Canceled</th>
+                        <th>Avg Rating</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reputation in reputations %}
+                    <tr class="wallet-row">
+                        <td>
+                            <div class="owner-cell">
+                                <div class="owner-avatar"><i class="fas fa-user-check"></i></div>
+                                <span>User #{{ reputation.userId }}</span>
+                            </div>
+                        </td>
+                        <td><span class="text-success">{{ reputation.completedContracts }}</span></td>
+                        <td><span class="text-danger">{{ reputation.canceledContracts }}</span></td>
+                        <td>
+                            <span class="price-text" style="color: #f59e0b;">
+                                {{ reputation.averageRating|number_format(1) }} <i class="fas fa-star" style="font-size:12px"></i>
+                            </span>
+                        </td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditModal({{ reputation.id }}, '{{ reputation.userId }}', '{{ reputation.completedContracts }}', '{{ reputation.canceledContracts }}', '{{ reputation.totalScore }}', '{{ reputation.ratingCount }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form action="{{ path('user_reputation_delete', {'id': reputation.id}) }}" method="POST" onsubmit="return confirm('Delete this record?')">
+                                <button type="submit" class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-star-half-alt"></i>
+                                <p>No reputation records found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Reputation Modal ── #}
+<div id="addReputationModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add Reputation Record</h2>
+            <span class="close-btn" onclick="document.getElementById('addReputationModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('user_reputation_create') }}" method="POST">
+            <div class="form-group">
+                <label>Target User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="number" name="userId" required min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Completed Contracts</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="number" name="completedContracts" min="0" value="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Canceled Contracts</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-times-circle"></i>
+                    <input type="number" name="canceledContracts" min="0" value="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Total Score (Stars Sum)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-star"></i>
+                    <input type="number" name="totalScore" min="0" value="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Rating Count</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-users"></i>
+                    <input type="number" name="ratingCount" min="0" value="0" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Record</button>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Reputation Modal ── #}
+<div id="editReputationModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit Reputation Record</h2>
+            <span class="close-btn" onclick="document.getElementById('editReputationModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editReputationForm" method="POST">
+            <div class="form-group">
+                <label>Target User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="number" name="userId" id="editRepUserId" required min="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Completed Contracts</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-check-circle"></i>
+                    <input type="number" name="completedContracts" id="editRepCompleted" min="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Canceled Contracts</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-times-circle"></i>
+                    <input type="number" name="canceledContracts" id="editRepCanceled" min="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Total Score (Stars Sum)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-star"></i>
+                    <input type="number" name="totalScore" id="editRepTotalScore" min="0" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Rating Count</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-users"></i>
+                    <input type="number" name="ratingCount" id="editRepRatingCount" min="0" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, userId, completed, canceled, score, count) {
+        document.getElementById('editReputationForm').action = "{{ path('user_reputation_index') }}/update/" + id;
+        document.getElementById('editRepUserId').value = userId;
+        document.getElementById('editRepCompleted').value = completed;
+        document.getElementById('editRepCanceled').value = canceled;
+        document.getElementById('editRepTotalScore').value = score;
+        document.getElementById('editRepRatingCount').value = count;
+        
+        document.getElementById('editReputationModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

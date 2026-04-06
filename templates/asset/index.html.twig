@@ -1,0 +1,186 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Assets - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'Manage Assets' : 'Market Assets' }}
+        </h1>
+        {% if app.session.get('role') == 'ADMIN' %}
+        <button class="btn btn-primary" onclick="document.getElementById('addAssetModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Asset
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Listed Assets</span>
+                <span class="stat-value">{{ activeCount }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Registered Assets</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Symbol</th>
+                        <th>Value (TND)</th>
+                        <th>Type</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                    <tr class="wallet-row">
+                        <td><span class="id-badge">#A{{ asset.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <span>{{ asset.name }}</span>
+                            </div>
+                        </td>
+                        <td><strong>{{ asset.symbol }}</strong></td>
+                        <td>
+                            <span class="price-text text-success">
+                                {{ asset.value|number_format(2) }} DT
+                            </span>
+                        </td>
+                        <td><span class="badge bg-secondary">{{ asset.type }}</span></td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditModal({{ asset.id }}, '{{ asset.name|escape('js') }}', '{{ asset.symbol|escape('js') }}', '{{ asset.value }}', '{{ asset.type|escape('js') }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form action="{{ path('asset_delete', {'id': asset.id}) }}" method="POST" onsubmit="return confirm('Delete this asset?')">
+                                <button type="submit" class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <p>No assets found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Asset Modal ── #}
+<div id="addAssetModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add New Asset</h2>
+            <span class="close-btn" onclick="document.getElementById('addAssetModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('asset_create') }}" method="POST">
+            <div class="form-group">
+                <label>Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" name="name" required placeholder="e.g. Bitcoin">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Symbol</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-info-circle"></i>
+                    <input type="text" name="symbol" required placeholder="e.g. BTC">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Initial Value (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="number" name="value" step="0.01" min="0" value="0.00" required>
+                </div>
+            </div>
+             <div class="form-group">
+                <label>Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-list"></i>
+                    <input type="text" name="type" required placeholder="Crypto, Stock, etc.">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Add Asset</button>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Asset Modal ── #}
+<div id="editAssetModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit Asset</h2>
+            <span class="close-btn" onclick="document.getElementById('editAssetModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editAssetForm" method="POST">
+            <div class="form-group">
+                <label>Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" name="name" id="editName" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Symbol</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-info-circle"></i>
+                    <input type="text" name="symbol" id="editSymbol" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Value (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="number" name="value" id="editValue" step="0.01" min="0" required>
+                </div>
+            </div>
+             <div class="form-group">
+                <label>Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-list"></i>
+                    <input type="text" name="type" id="editType" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, name, symbol, value, type) {
+        document.getElementById('editAssetForm').action = "{{ path('asset_index') }}/update/" + id;
+        document.getElementById('editName').value = name;
+        document.getElementById('editSymbol').value = symbol;
+        document.getElementById('editValue').value = parseFloat(value).toFixed(2);
+        document.getElementById('editType').value = type;
+        document.getElementById('editAssetModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

@@ -27,6 +27,26 @@
                         <i class="fas fa-bullseye"></i> 
                         {{ app.session.get('role') == 'ADMIN' ? 'Trading Watchlist' : 'My Trading Goals' }}
                     </a>
+                    <a href="{{ path('asset_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'asset' %}active{% endif %}">
+                        <i class="fas fa-chart-line"></i> 
+                        Assets
+                    </a>
+                    <a href="{{ path('portfolio_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'portfolio' %}active{% endif %}">
+                        <i class="fas fa-briefcase"></i> 
+                        Portfolios
+                    </a>
+                    <a href="{{ path('order_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'order' %}active{% endif %}">
+                        <i class="fas fa-shopping-cart"></i> 
+                        Orders
+                    </a>
+                    <a href="{{ path('p2p_contract_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'p2p_contract' %}active{% endif %}">
+                        <i class="fas fa-handshake"></i> 
+                        P2P Contracts
+                    </a>
+                    <a href="{{ path('user_reputation_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'user_reputation' %}active{% endif %}">
+                        <i class="fas fa-star"></i> 
+                        User Reputations
+                    </a>
                     
                     <div style="margin-top: auto; padding-top: 2rem;">
                         <a href="{{ path('app_logout') }}" class="nav-link" style="color: #ef4444;">
@@ -99,6 +119,147 @@
         </div>
         {% endif %}
 
-        {% block javascripts %}{% endblock %}
+        {% block javascripts %}
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. GLOBAL SEARCH
+            const searchInput = document.querySelector('.search-bar input');
+            if(searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const filter = this.value.toLowerCase();
+                    const tables = document.querySelectorAll('.data-table');
+                    
+                    tables.forEach(table => {
+                        const rows = table.querySelectorAll('tbody tr');
+                        rows.forEach(row => {
+                            if(row.querySelector('.empty-state')) return;
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(filter) ? '' : 'none';
+                        });
+                    });
+                });
+            }
+
+            // 2. TABLE SORTING (Tri)
+            const tables = document.querySelectorAll('.data-table');
+            tables.forEach(table => {
+                const headers = table.querySelectorAll('thead th');
+                headers.forEach((header, index) => {
+                    const headerText = header.textContent.trim().toLowerCase();
+                    if(headerText === 'actions') return;
+                    
+                    header.style.cursor = 'pointer';
+                    header.title = "Click to sort";
+                    
+                    if(!header.querySelector('i')){
+                        header.innerHTML += ' <i class="fas fa-sort text-muted" style="font-size: 0.8em; margin-left: 5px;"></i>';
+                    }
+                    
+                    header.addEventListener('click', () => {
+                        const tbody = table.querySelector('tbody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        if(rows.length === 0 || rows[0].querySelector('.empty-state')) return;
+                        
+                        const isAsc = header.classList.contains('sort-asc');
+                        
+                        headers.forEach(h => {
+                            h.classList.remove('sort-asc', 'sort-desc');
+                            const icon = h.querySelector('i');
+                            if(icon) {
+                                icon.className = 'fas fa-sort text-muted';
+                            }
+                        });
+                        
+                        const dirModifier = isAsc ? -1 : 1;
+                        if(isAsc) {
+                            header.classList.add('sort-desc');
+                            header.querySelector('i').className = 'fas fa-sort-down text-primary';
+                        } else {
+                            header.classList.add('sort-asc');
+                            header.querySelector('i').className = 'fas fa-sort-up text-primary';
+                        }
+                        
+                        rows.sort((a, b) => {
+                            const aCol = a.querySelectorAll('td')[index].textContent.trim();
+                            const bCol = b.querySelectorAll('td')[index].textContent.trim();
+                            
+                            const aNum = parseFloat(aCol.replace(/[^0-9.-]+/g,""));
+                            const bNum = parseFloat(bCol.replace(/[^0-9.-]+/g,""));
+                            
+                            if(!isNaN(aNum) && !isNaN(bNum) && isFinite(aNum) && isFinite(bNum)) {
+                                return (aNum - bNum) * dirModifier;
+                            }
+                            return aCol.localeCompare(bCol) * dirModifier;
+                        });
+                        
+                        rows.forEach(row => tbody.appendChild(row));
+                    });
+                });
+            });
+            
+            // 3. EXPORT TO CSV (Other Metier Basique)
+            const headerActionsContainer = document.querySelector('.d-flex.justify-content-between.align-items-center.mb-4');
+            if(headerActionsContainer && tables.length > 0) {
+                const btnGroup = document.createElement('div');
+                btnGroup.className = 'd-flex align-items-center gap-2';
+                
+                const existingBtn = headerActionsContainer.querySelector('button');
+                if(existingBtn) {
+                    existingBtn.parentNode.insertBefore(btnGroup, existingBtn);
+                    btnGroup.appendChild(existingBtn);
+                } else {
+                    headerActionsContainer.appendChild(btnGroup);
+                }
+                
+                const csvBtn = document.createElement('button');
+                csvBtn.className = 'btn text-light d-flex align-items-center justify-content-center';
+                csvBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+                csvBtn.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                csvBtn.style.borderRadius = '50px';
+                csvBtn.style.padding = '0.5rem 1.2rem';
+                csvBtn.style.marginLeft = '10px';
+                csvBtn.style.transition = 'all 0.3s ease';
+                csvBtn.innerHTML = '<i class="fas fa-file-csv mr-2" style="margin-right: 8px;"></i> Export Data';
+                
+                csvBtn.onmouseover = () => csvBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+                csvBtn.onmouseout = () => csvBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+                
+                csvBtn.onclick = function() {
+                    let csv = [];
+                    const table = document.querySelector('.data-table');
+                    const rows = table.querySelectorAll('tr');
+                    
+                    for (let i = 0; i < rows.length; i++) {
+                        let row = [], cols = rows[i].querySelectorAll('td, th');
+                        let isHeader = i === 0;
+                        
+                        for (let j = 0; j < cols.length; j++) {
+                            const text = cols[j].textContent.trim();
+                            if(text.toLowerCase() === 'actions') continue;
+                            if(cols[j].querySelector('.btn-icon') || cols[j].querySelector('form')) continue;
+                            
+                            let data = cols[j].textContent.replace(/(\r\n|\n|\r)/gm, " ").replace(/\s+/g, ' ').trim();
+                            data = data.replace(/"/g, '""');
+                            row.push('"' + data + '"');
+                        }
+                        // Avoid adding empty rows if they have action buttons only
+                        if(row.length > 0) csv.push(row.join(','));
+                    }
+                    
+                    let csvFile = new Blob([csv.join('\n')], {type: "text/csv;charset=utf-8;"});
+                    let downloadLink = document.createElement("a");
+                    downloadLink.download = document.title.split('-')[0].trim() + "_Export.csv";
+                    downloadLink.href = window.URL.createObjectURL(csvFile);
+                    downloadLink.style.display = "none";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                };
+                
+                btnGroup.appendChild(csvBtn);
+            }
+        });
+        </script>
+        {% endblock %}
     </body>
 </html>
