@@ -17,7 +17,7 @@ class OrderController extends AbstractController
     public function index(OrderRepository $orderRepository, AssetRepository $assetRepository, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         $orders = $orderRepository->findAll();

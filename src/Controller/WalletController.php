@@ -20,7 +20,7 @@ class WalletController extends AbstractController
     public function index(WalletRepository $walletRepository, ActivityLogRepository $logRepository, \App\Repository\WalletGoalRepository $goalRepository, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         if ($request->getSession()->get('role') === 'USER') {

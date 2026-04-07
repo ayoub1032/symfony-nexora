@@ -32,6 +32,10 @@ class Wallet
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\OneToOne(inversedBy: 'wallet')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?User $user = null;
+
     #[ORM\OneToMany(mappedBy: 'wallet', targetEntity: WalletGoal::class, orphanRemoval: true)]
     private Collection $walletGoals;
 
@@ -59,6 +63,9 @@ class Wallet
 
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(\DateTimeImmutable $createdAt): self { $this->createdAt = $createdAt; return $this; }
+
+    public function getUser(): ?User { return $this->user; }
+    public function setUser(?User $user): self { $this->user = $user; return $this; }
 
     /**
      * @return Collection<int, ActivityLog>

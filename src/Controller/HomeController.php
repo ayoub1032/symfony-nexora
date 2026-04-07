@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -9,45 +10,71 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class HomeController extends AbstractController
 {
-    #[Route('/', name: 'app_gateway')]
-    public function gateway(\App\Repository\WalletRepository $walletRepository): Response
+    #[Route('/', name: 'app_home')]
+    public function home(Request $request): Response
     {
-        return $this->render('home/gateway.html.twig', [
-            'wallets' => $walletRepository->findAll(),
-        ]);
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        return $this->redirectToRoute('app_login');
     }
 
-    #[Route('/choose-role/{role}', name: 'app_choose_role')]
-    public function chooseRole(string $role, Request $request): Response
+    #[Route('/login', name: 'app_login', methods: ['GET', 'POST'])]
+    public function login(Request $request, UserRepository $userRepository): Response
     {
-        $role = strtoupper($role);
-        if ($role === 'USER') {
-            // Pour le User, on doit choisir un wallet (via la gateway)
-            $walletId = $request->query->get('wallet_id');
-            if (!$walletId) {
-                return $this->redirectToRoute('app_gateway');
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        if ($request->isMethod('POST')) {
+            $email = trim((string) $request->request->get('email'));
+            $password = (string) $request->request->get('password');
+
+            $user = $userRepository->findOneByEmail($email);
+
+            if (!$user || !password_verify($password, (string) $user->getPassword())) {
+                $this->addFlash('danger', 'Invalid email or password.');
+
+                return $this->render('security/login.html.twig', [
+                    'last_email' => $email,
+                ]);
             }
-            $request->getSession()->set('logged_in_wallet_id', $walletId);
+
+            $isAdmin = $user->hasRole('ROLE_ADMIN');
+            $wallet = $user->getWallet();
+
+            if (!$isAdmin && !$wallet) {
+                $this->addFlash('danger', 'This user account is not linked to a wallet yet.');
+
+                return $this->render('security/login.html.twig', [
+                    'last_email' => $email,
+                ]);
+            }
+
+            $session = $request->getSession();
+            $session->set('user_id', $user->getId());
+            $session->set('user_name', $user->getFullName());
+            $session->set('user_email', $user->getEmail());
+            $session->set('role', $isAdmin ? 'ADMIN' : 'USER');
+            $session->set('logged_in_wallet_id', $wallet?->getId());
+
+            $this->addFlash('success', 'Login successful.');
+
+            return $this->redirectToRoute('wallet_index');
         }
 
-        if (!in_array($role, ['USER', 'ADMIN'])) {
-            return $this->redirectToRoute('app_gateway');
-        }
-
-        $session = $request->getSession();
-        $session->set('role', $role);
-        $session->set('user_name', $role === 'ADMIN' ? 'Professional Admin' : 'Investor User');
-
-        $this->addFlash('success', 'Bienvenue dans l\'espace ' . ($role === 'ADMIN' ? 'Administration' : 'Client') . ' !');
-
-        return $this->redirectToRoute('wallet_index');
+        return $this->render('security/login.html.twig', [
+            'last_email' => '',
+        ]);
     }
 
     #[Route('/logout', name: 'app_logout')]
     public function logout(Request $request): Response
     {
         $request->getSession()->clear();
-        $this->addFlash('info', 'Vous avez été déconnecté avec succès.');
-        return $this->redirectToRoute('app_gateway');
+        $this->addFlash('info', 'You have been logged out successfully.');
+
+        return $this->redirectToRoute('app_login');
     }
 }

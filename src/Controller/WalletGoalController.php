@@ -19,7 +19,7 @@ class WalletGoalController extends AbstractController
     public function index(WalletGoalRepository $goalRepository, WalletRepository $walletRepository, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
         $role = $request->getSession()->get('role');
         $sessionWalletId = $request->getSession()->get('logged_in_wallet_id');
@@ -52,7 +52,7 @@ class WalletGoalController extends AbstractController
             $walletId = $sessionWalletId;
         } elseif ($role !== 'ADMIN') {
             $this->addFlash('danger', 'Unauthorized access.');
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         $name        = $request->request->get('name');
@@ -105,7 +105,7 @@ class WalletGoalController extends AbstractController
             $this->addFlash('danger', 'You can only edit your own goals.');
             return $this->redirectToRoute('wallet_goal_index');
         } elseif ($role !== 'ADMIN' && $role !== 'USER') {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         $name        = $request->request->get('name');

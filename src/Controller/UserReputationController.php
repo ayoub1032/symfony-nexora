@@ -16,7 +16,7 @@ class UserReputationController extends AbstractController
     public function index(UserReputationRepository $reputationRepository, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         $reputations = $reputationRepository->findAll();

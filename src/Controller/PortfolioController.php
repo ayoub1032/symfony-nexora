@@ -16,7 +16,7 @@ class PortfolioController extends AbstractController
     public function index(PortfolioRepository $portfolioRepository, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
-            return $this->redirectToRoute('app_gateway');
+            return $this->redirectToRoute('app_login');
         }
 
         if ($request->getSession()->get('role') === 'USER') {
