@@ -117,14 +117,14 @@
                 <label>Owner Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="text" name="owner" required minlength="3" placeholder="Enter full name">
+                    <input type="text" name="owner" placeholder="Enter full name">
                 </div>
             </div>
             <div class="form-group">
                 <label>Initial Balance (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="balance" step="0.01" min="0" value="0.00" required>
+                    <input type="text" name="balance" value="0.00">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Initialize Wallet</button>
@@ -144,7 +144,7 @@
                 <label>Owner Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="text" name="owner" id="editOwner" required minlength="3" placeholder="Enter full name">
+                    <input type="text" name="owner" id="editOwner" placeholder="Enter full name">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
@@ -167,7 +167,7 @@
                 <label>Operation Type</label>
                 <div class="input-with-icon">
                     <i class="fas fa-tasks"></i>
-                    <select name="type" required>
+                    <select name="type">
                         <option value="Deposit">Deposit (+)</option>
                         <option value="Withdrawal">Withdrawal (−)</option>
                     </select>
@@ -177,7 +177,7 @@
                 <label>Amount (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-money-bill-wave"></i>
-                    <input type="number" name="amount" step="0.01" min="0.01" required placeholder="0.00">
+                    <input type="text" name="amount" placeholder="0.00">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Confirm Transaction</button>

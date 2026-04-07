@@ -179,7 +179,7 @@
                 <label>Wallet</label>
                 <div class="input-with-icon">
                     <i class="fas fa-wallet"></i>
-                    <select name="wallet_id" required>
+                    <select name="wallet_id">
                         {% if app.session.get('role') == 'USER' %}
                              <option value="{{ app.session.get('logged_in_wallet_id') }}" selected>My Wallet</option>
                         {% else %}
@@ -195,21 +195,21 @@
                 <label>Goal Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-tag"></i>
-                    <input type="text" name="name" required minlength="3" placeholder="e.g. Save for BTC investment">
+                    <input type="text" name="name" placeholder="e.g. Save for BTC investment">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Amount (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="target_amount" step="0.01" min="0.01" required placeholder="0.00">
+                    <input type="text" name="target_amount" placeholder="0.00">
                 </div>
             </div>
             <div class="form-group">
                 <label>Deadline</label>
                 <div class="input-with-icon">
                     <i class="fas fa-calendar-alt"></i>
-                    <input type="date" name="deadline" id="addGoalDeadline" required>
+                    <input type="text" name="deadline" id="addGoalDeadline" placeholder="YYYY-MM-DD">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Create Goal</button>
@@ -229,21 +229,21 @@
                 <label>Goal Name</label>
                 <div class="input-with-icon">
                     <i class="fas fa-tag"></i>
-                    <input type="text" name="name" id="editGoalName" required minlength="3">
+                    <input type="text" name="name" id="editGoalName">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Amount (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="target_amount" id="editGoalTarget" step="0.01" min="0.01" required>
+                    <input type="text" name="target_amount" id="editGoalTarget">
                 </div>
             </div>
             <div class="form-group">
                 <label>Deadline</label>
                 <div class="input-with-icon">
                     <i class="fas fa-calendar-alt"></i>
-                    <input type="date" name="deadline" id="editGoalDeadline" required>
+                    <input type="text" name="deadline" id="editGoalDeadline" placeholder="YYYY-MM-DD">
                 </div>
             </div>
             <div class="form-group">

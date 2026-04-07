@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class PortfolioController extends AbstractController
 {
@@ -37,7 +38,7 @@ class PortfolioController extends AbstractController
     }
 
     #[Route('/portfolios/create', name: 'portfolio_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -48,6 +49,15 @@ class PortfolioController extends AbstractController
         $portfolio->setUserId((int)$request->request->get('userId'));
         $portfolio->setTotalValue(0.0); // newly created portfolio has 0 value
 
+        $errors = $validator->validate($portfolio);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('portfolio_index');
+        }
+
         $entityManager->persist($portfolio);
         $entityManager->flush();
         $this->addFlash('success', 'Portfolio created successfully!');
@@ -56,7 +66,7 @@ class PortfolioController extends AbstractController
     }
 
     #[Route('/portfolios/update/{id}', name: 'portfolio_update', methods: ['POST'])]
-    public function update(Portfolio $portfolio, Request $request, EntityManagerInterface $entityManager): Response
+    public function update(Portfolio $portfolio, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -66,6 +76,15 @@ class PortfolioController extends AbstractController
         $portfolio->setUserId((int)$request->request->get('userId'));
         if ($request->request->has('totalValue')) {
             $portfolio->setTotalValue((float)$request->request->get('totalValue'));
+        }
+
+        $errors = $validator->validate($portfolio);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('portfolio_index');
         }
 
         $entityManager->flush();

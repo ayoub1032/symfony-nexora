@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\OrderRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Note: 'Order' is a reserved keyword in SQL, so we rename the table to `orders`.
@@ -19,18 +20,27 @@ class Order
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Please select an asset.')]
     private ?Asset $asset = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'User ID is required.')]
+    #[Assert\Positive(message: 'User ID must be greater than zero.')]
     private ?int $userId = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Quantity is required.')]
+    #[Assert\Positive(message: 'Quantity must be greater than zero.')]
     private ?int $quantity = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Price is required.')]
+    #[Assert\PositiveOrZero(message: 'Price cannot be negative.')]
     private ?float $price = null;
 
     #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(message: 'Order type is required.')]
+    #[Assert\Choice(choices: ['BUY', 'SELL'], message: 'Order type must be BUY or SELL.')]
     private ?string $type = null;
 
     public function getId(): ?int

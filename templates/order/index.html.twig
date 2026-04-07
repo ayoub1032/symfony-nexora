@@ -103,14 +103,14 @@
                 <label>User ID</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="number" name="userId" required min="1" placeholder="Enter target User ID">
+                    <input type="text" name="userId" placeholder="Enter target User ID">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Asset</label>
                 <div class="input-with-icon">
                     <i class="fas fa-gem"></i>
-                    <select name="asset_id" required>
+                    <select name="asset_id">
                         <option value="" disabled selected>Select an Asset...</option>
                         {% for asset in assets %}
                             <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
@@ -122,21 +122,21 @@
                 <label>Quantity</label>
                 <div class="input-with-icon">
                     <i class="fas fa-sort-amount-up"></i>
-                    <input type="number" name="quantity" min="1" required placeholder="Quantity">
+                    <input type="text" name="quantity" placeholder="Quantity">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Price (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="price" step="0.01" min="0" required placeholder="0.00">
+                    <input type="text" name="price" placeholder="0.00">
                 </div>
             </div>
             <div class="form-group">
                 <label>Order Type</label>
                 <div class="input-with-icon">
                     <i class="fas fa-exchange-alt"></i>
-                    <select name="type" required>
+                    <select name="type">
                         <option value="Buy">Buy</option>
                         <option value="Sell">Sell</option>
                     </select>
@@ -159,14 +159,14 @@
                 <label>User ID</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="number" name="userId" id="editOrderUserId" required min="1">
+                    <input type="text" name="userId" id="editOrderUserId">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Asset</label>
                 <div class="input-with-icon">
                     <i class="fas fa-gem"></i>
-                    <select name="asset_id" id="editOrderAssetId" required>
+                    <select name="asset_id" id="editOrderAssetId">
                         {% for asset in assets %}
                             <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
                         {% endfor %}
@@ -177,21 +177,21 @@
                 <label>Quantity</label>
                 <div class="input-with-icon">
                     <i class="fas fa-sort-amount-up"></i>
-                    <input type="number" name="quantity" id="editOrderQuantity" min="1" required>
+                    <input type="text" name="quantity" id="editOrderQuantity">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Price (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="price" id="editOrderPrice" step="0.01" min="0" required>
+                    <input type="text" name="price" id="editOrderPrice">
                 </div>
             </div>
             <div class="form-group">
                 <label>Order Type</label>
                 <div class="input-with-icon">
                     <i class="fas fa-exchange-alt"></i>
-                    <select name="type" id="editOrderType" required>
+                    <select name="type" id="editOrderType">
                         <option value="Buy">Buy</option>
                         <option value="Sell">Sell</option>
                     </select>

@@ -68,7 +68,13 @@ class WalletGoalController extends AbstractController
         $goal->setTargetAmount((string)$target);
 
         if ($deadlineStr) {
-            $goal->setDeadline(new \DateTimeImmutable($deadlineStr));
+            try {
+                $goal->setDeadline(new \DateTimeImmutable((string) $deadlineStr));
+            } catch (\Exception) {
+                $this->addFlash('danger', 'Deadline format is invalid.');
+
+                return $this->redirectToRoute('wallet_goal_index');
+            }
         }
 
         $errors = $validator->validate($goal);
@@ -118,7 +124,13 @@ class WalletGoalController extends AbstractController
         $goal->setStatus((string)$status);
 
         if ($deadlineStr) {
-            $goal->setDeadline(new \DateTimeImmutable($deadlineStr));
+            try {
+                $goal->setDeadline(new \DateTimeImmutable((string) $deadlineStr));
+            } catch (\Exception) {
+                $this->addFlash('danger', 'Deadline format is invalid.');
+
+                return $this->redirectToRoute('wallet_goal_index');
+            }
         }
 
         $errors = $validator->validate($goal);

@@ -31,6 +31,22 @@ class HomeController extends AbstractController
             $email = trim((string) $request->request->get('email'));
             $password = (string) $request->request->get('password');
 
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $this->addFlash('danger', 'Please enter a valid email address.');
+
+                return $this->render('security/login.html.twig', [
+                    'last_email' => $email,
+                ]);
+            }
+
+            if ($password === '') {
+                $this->addFlash('danger', 'Password is required.');
+
+                return $this->render('security/login.html.twig', [
+                    'last_email' => $email,
+                ]);
+            }
+
             $user = $userRepository->findOneByEmail($email);
 
             if (!$user || !password_verify($password, (string) $user->getPassword())) {

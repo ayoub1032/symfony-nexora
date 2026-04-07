@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\P2pContractRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: P2pContractRepository::class)]
 class P2pContract
@@ -15,22 +16,33 @@ class P2pContract
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Creator ID is required.')]
+    #[Assert\Positive(message: 'Creator ID must be greater than zero.')]
     private ?int $creatorId = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Please select an asset.')]
     private ?Asset $asset = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Quantity is required.')]
+    #[Assert\Positive(message: 'Quantity must be greater than zero.')]
     private ?int $quantity = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Price per unit is required.')]
+    #[Assert\PositiveOrZero(message: 'Price per unit cannot be negative.')]
     private ?float $pricePerUnit = null;
 
     #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(message: 'Contract type is required.')]
+    #[Assert\Choice(choices: ['BUY', 'SELL'], message: 'Contract type must be BUY or SELL.')]
     private ?string $contractType = null;
 
     #[ORM\Column(length: 20)]
+    #[Assert\NotBlank(message: 'Status is required.')]
+    #[Assert\Choice(choices: ['OPEN', 'ACCEPTED', 'COMPLETED', 'CANCELLED'], message: 'Invalid contract status.')]
     private ?string $status = null;
 
     #[ORM\Column(nullable: true)]

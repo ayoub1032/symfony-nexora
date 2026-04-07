@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserReputationController extends AbstractController
 {
@@ -29,7 +30,7 @@ class UserReputationController extends AbstractController
     }
 
     #[Route('/user-reputations/create', name: 'user_reputation_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -43,6 +44,15 @@ class UserReputationController extends AbstractController
         $reputation->setTotalScore((int)$request->request->get('totalScore', 0));
         $reputation->setRatingCount((int)$request->request->get('ratingCount', 0));
 
+        $errors = $validator->validate($reputation);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('user_reputation_index');
+        }
+
         $entityManager->persist($reputation);
         $entityManager->flush();
         $this->addFlash('success', 'User Reputation created successfully!');
@@ -51,7 +61,7 @@ class UserReputationController extends AbstractController
     }
 
     #[Route('/user-reputations/update/{id}', name: 'user_reputation_update', methods: ['POST'])]
-    public function update(UserReputation $reputation, Request $request, EntityManagerInterface $entityManager): Response
+    public function update(UserReputation $reputation, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -63,6 +73,15 @@ class UserReputationController extends AbstractController
         $reputation->setCanceledContracts((int)$request->request->get('canceledContracts'));
         $reputation->setTotalScore((int)$request->request->get('totalScore'));
         $reputation->setRatingCount((int)$request->request->get('ratingCount'));
+
+        $errors = $validator->validate($reputation);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('user_reputation_index');
+        }
 
         $entityManager->flush();
         $this->addFlash('success', 'User Reputation updated successfully!');

@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\UserReputationRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserReputationRepository::class)]
 class UserReputation
@@ -14,18 +15,28 @@ class UserReputation
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'User ID is required.')]
+    #[Assert\Positive(message: 'User ID must be greater than zero.')]
     private ?int $userId = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Completed contracts is required.')]
+    #[Assert\PositiveOrZero(message: 'Completed contracts cannot be negative.')]
     private ?int $completedContracts = 0;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Canceled contracts is required.')]
+    #[Assert\PositiveOrZero(message: 'Canceled contracts cannot be negative.')]
     private ?int $canceledContracts = 0;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Total score is required.')]
+    #[Assert\PositiveOrZero(message: 'Total score cannot be negative.')]
     private ?int $totalScore = 0;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Rating count is required.')]
+    #[Assert\PositiveOrZero(message: 'Rating count cannot be negative.')]
     private ?int $ratingCount = 0;
 
     public function getId(): ?int

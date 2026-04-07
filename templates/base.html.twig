@@ -47,6 +47,12 @@
                         <i class="fas fa-star"></i> 
                         User Reputations
                     </a>
+                    {% if app.session.get('role') == 'ADMIN' %}
+                    <a href="{{ path('user_index') }}" class="nav-link {% if app.request.attributes.get('_route') in ['user_index', 'user_create', 'user_update', 'user_delete'] %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        Users
+                    </a>
+                    {% endif %}
                     
                     <div style="margin-top: auto; padding-top: 2rem;">
                         <a href="{{ path('app_logout') }}" class="nav-link" style="color: #ef4444;">

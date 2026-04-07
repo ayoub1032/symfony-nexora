@@ -6,6 +6,7 @@ use App\Repository\PortfolioRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PortfolioRepository::class)]
 class Portfolio
@@ -16,9 +17,13 @@ class Portfolio
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'User ID is required.')]
+    #[Assert\Positive(message: 'User ID must be greater than zero.')]
     private ?int $userId = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Total value is required.')]
+    #[Assert\PositiveOrZero(message: 'Total value cannot be negative.')]
     private ?float $totalValue = null;
 
     #[ORM\OneToMany(mappedBy: 'portfolio', targetEntity: PortfolioAsset::class, cascade: ['persist', 'remove'])]

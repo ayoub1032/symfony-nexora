@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class OrderController extends AbstractController
 {
@@ -32,7 +33,7 @@ class OrderController extends AbstractController
     }
 
     #[Route('/orders/create', name: 'order_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -52,7 +53,16 @@ class OrderController extends AbstractController
         $order->setUserId((int)$request->request->get('userId'));
         $order->setQuantity((int)$request->request->get('quantity'));
         $order->setPrice((float)$request->request->get('price'));
-        $order->setType((string)$request->request->get('type'));
+        $order->setType(strtoupper(trim((string)$request->request->get('type'))));
+
+        $errors = $validator->validate($order);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('order_index');
+        }
 
         $entityManager->persist($order);
         $entityManager->flush();
@@ -62,7 +72,7 @@ class OrderController extends AbstractController
     }
 
     #[Route('/orders/update/{id}', name: 'order_update', methods: ['POST'])]
-    public function update(Order $order, Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository): Response
+    public function update(Order $order, Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -78,7 +88,16 @@ class OrderController extends AbstractController
         $order->setUserId((int)$request->request->get('userId'));
         $order->setQuantity((int)$request->request->get('quantity'));
         $order->setPrice((float)$request->request->get('price'));
-        $order->setType((string)$request->request->get('type'));
+        $order->setType(strtoupper(trim((string)$request->request->get('type'))));
+
+        $errors = $validator->validate($order);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('order_index');
+        }
 
         $entityManager->flush();
         $this->addFlash('success', 'Order updated successfully!');

@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class AssetController extends AbstractController
 {
@@ -29,7 +30,7 @@ class AssetController extends AbstractController
     }
 
     #[Route('/market-assets/create', name: 'asset_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -42,6 +43,15 @@ class AssetController extends AbstractController
         $asset->setValue((float)$request->request->get('value', 0));
         $asset->setType((string)$request->request->get('type'));
 
+        $errors = $validator->validate($asset);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('asset_index');
+        }
+
         $entityManager->persist($asset);
         $entityManager->flush();
         $this->addFlash('success', 'Asset created successfully!');
@@ -50,7 +60,7 @@ class AssetController extends AbstractController
     }
 
     #[Route('/market-assets/update/{id}', name: 'asset_update', methods: ['POST'])]
-    public function update(Asset $asset, Request $request, EntityManagerInterface $entityManager): Response
+    public function update(Asset $asset, Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -61,6 +71,15 @@ class AssetController extends AbstractController
         $asset->setSymbol((string)$request->request->get('symbol'));
         $asset->setValue((float)$request->request->get('value', 0));
         $asset->setType((string)$request->request->get('type'));
+
+        $errors = $validator->validate($asset);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('asset_index');
+        }
 
         $entityManager->flush();
         $this->addFlash('success', 'Asset updated successfully!');

@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\AssetRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AssetRepository::class)]
 class Asset
@@ -14,15 +15,23 @@ class Asset
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Asset name is required.')]
+    #[Assert\Length(min: 2, minMessage: 'Asset name must be at least {{ limit }} characters.')]
     private ?string $name = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: 'Asset symbol is required.')]
+    #[Assert\Length(min: 2, max: 10, minMessage: 'Asset symbol must be at least {{ limit }} characters.', maxMessage: 'Asset symbol cannot exceed {{ limit }} characters.')]
     private ?string $symbol = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: 'Asset value is required.')]
+    #[Assert\PositiveOrZero(message: 'Asset value cannot be negative.')]
     private ?float $value = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Asset type is required.')]
+    #[Assert\Length(min: 2, minMessage: 'Asset type must be at least {{ limit }} characters.')]
     private ?string $type = null;
 
     public function getId(): ?int

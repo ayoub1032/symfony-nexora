@@ -105,14 +105,14 @@
                 <label>Creator User ID</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="number" name="creatorId" required min="1" placeholder="Enter target User ID">
+                    <input type="text" name="creatorId" placeholder="Enter target User ID">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Asset</label>
                 <div class="input-with-icon">
                     <i class="fas fa-gem"></i>
-                    <select name="asset_id" required>
+                    <select name="asset_id">
                         <option value="" disabled selected>Select an Asset...</option>
                         {% for asset in assets %}
                             <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
@@ -124,21 +124,21 @@
                 <label>Quantity</label>
                 <div class="input-with-icon">
                     <i class="fas fa-sort-amount-up"></i>
-                    <input type="number" name="quantity" min="1" required placeholder="Quantity">
+                    <input type="text" name="quantity" placeholder="Quantity">
                 </div>
             </div>
             <div class="form-group">
                 <label>Price Per Unit (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="pricePerUnit" step="0.01" min="0" required placeholder="0.00">
+                    <input type="text" name="pricePerUnit" placeholder="0.00">
                 </div>
             </div>
             <div class="form-group">
                 <label>Contract Type</label>
                 <div class="input-with-icon">
                     <i class="fas fa-exchange-alt"></i>
-                    <select name="contractType" required>
+                    <select name="contractType">
                         <option value="BUY">Buy</option>
                         <option value="SELL">Sell</option>
                     </select>
@@ -162,14 +162,14 @@
                 <label>Creator User ID</label>
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="number" name="creatorId" id="editContractCreatorId" required min="1">
+                    <input type="text" name="creatorId" id="editContractCreatorId">
                 </div>
             </div>
             <div class="form-group">
                 <label>Target Asset</label>
                 <div class="input-with-icon">
                     <i class="fas fa-gem"></i>
-                    <select name="asset_id" id="editContractAssetId" required>
+                    <select name="asset_id" id="editContractAssetId">
                         {% for asset in assets %}
                             <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }})</option>
                         {% endfor %}
@@ -180,21 +180,21 @@
                 <label>Quantity</label>
                 <div class="input-with-icon">
                     <i class="fas fa-sort-amount-up"></i>
-                    <input type="number" name="quantity" id="editContractQuantity" min="1" required>
+                    <input type="text" name="quantity" id="editContractQuantity">
                 </div>
             </div>
             <div class="form-group">
                 <label>Price Per Unit (TND)</label>
                 <div class="input-with-icon">
                     <i class="fas fa-coins"></i>
-                    <input type="number" name="pricePerUnit" id="editContractPrice" step="0.01" min="0" required>
+                    <input type="text" name="pricePerUnit" id="editContractPrice">
                 </div>
             </div>
             <div class="form-group">
                 <label>Contract Type</label>
                 <div class="input-with-icon">
                     <i class="fas fa-exchange-alt"></i>
-                    <select name="contractType" id="editContractType" required>
+                    <select name="contractType" id="editContractType">
                         <option value="BUY">Buy</option>
                         <option value="SELL">Sell</option>
                     </select>
@@ -204,7 +204,7 @@
                 <label>Status</label>
                 <div class="input-with-icon">
                     <i class="fas fa-info-circle"></i>
-                    <select name="status" id="editContractStatus" required>
+                    <select name="status" id="editContractStatus">
                         <option value="OPEN">OPEN</option>
                         <option value="ACCEPTED">ACCEPTED</option>
                         <option value="COMPLETED">COMPLETED</option>

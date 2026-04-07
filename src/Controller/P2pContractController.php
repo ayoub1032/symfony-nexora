@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class P2pContractController extends AbstractController
 {
@@ -32,7 +33,7 @@ class P2pContractController extends AbstractController
     }
 
     #[Route('/p2p-contracts/create', name: 'p2p_contract_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository): Response
+    public function create(Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -52,8 +53,17 @@ class P2pContractController extends AbstractController
         $contract->setAsset($asset);
         $contract->setQuantity((int)$request->request->get('quantity'));
         $contract->setPricePerUnit((float)$request->request->get('pricePerUnit'));
-        $contract->setContractType((string)$request->request->get('contractType'));
-        $contract->setStatus((string)$request->request->get('status', 'OPEN'));
+        $contract->setContractType(strtoupper(trim((string)$request->request->get('contractType'))));
+        $contract->setStatus(strtoupper(trim((string)$request->request->get('status', 'OPEN'))));
+
+        $errors = $validator->validate($contract);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('p2p_contract_index');
+        }
 
         $entityManager->persist($contract);
         $entityManager->flush();
@@ -63,7 +73,7 @@ class P2pContractController extends AbstractController
     }
 
     #[Route('/p2p-contracts/update/{id}', name: 'p2p_contract_update', methods: ['POST'])]
-    public function update(P2pContract $contract, Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository): Response
+    public function update(P2pContract $contract, Request $request, EntityManagerInterface $entityManager, AssetRepository $assetRepository, ValidatorInterface $validator): Response
     {
         if ($request->getSession()->get('role') !== 'ADMIN') {
             $this->addFlash('danger', 'Reserved for Admin access.');
@@ -79,8 +89,17 @@ class P2pContractController extends AbstractController
         $contract->setCreatorId((int)$request->request->get('creatorId'));
         $contract->setQuantity((int)$request->request->get('quantity'));
         $contract->setPricePerUnit((float)$request->request->get('pricePerUnit'));
-        $contract->setContractType((string)$request->request->get('contractType'));
-        $contract->setStatus((string)$request->request->get('status'));
+        $contract->setContractType(strtoupper(trim((string)$request->request->get('contractType'))));
+        $contract->setStatus(strtoupper(trim((string)$request->request->get('status'))));
+
+        $errors = $validator->validate($contract);
+        if (count($errors) > 0) {
+            foreach ($errors as $error) {
+                $this->addFlash('danger', $error->getMessage());
+            }
+
+            return $this->redirectToRoute('p2p_contract_index');
+        }
 
         $entityManager->flush();
         $this->addFlash('success', 'P2P Contract updated successfully!');
