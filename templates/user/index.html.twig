@@ -38,6 +38,28 @@
     <div class="data-card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3>Platform Users</h3>
+            <div class="d-flex gap-3 align-items-center">
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 250px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="userSearch" placeholder="Search by name or email..." onkeyup="filterUsers()">
+                </div>
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 170px;">
+                    <i class="fas fa-user-tag"></i>
+                    <select id="userRoleFilter" onchange="filterUsers()">
+                        <option value="all">All Roles</option>
+                        <option value="ADMIN">Admins</option>
+                        <option value="USER">Users</option>
+                    </select>
+                </div>
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 190px;">
+                    <i class="fas fa-wallet"></i>
+                    <select id="userWalletFilter" onchange="filterUsers()">
+                        <option value="all">All Wallet States</option>
+                        <option value="with_wallet">With Wallet</option>
+                        <option value="without_wallet">Without Wallet</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="table-responsive">
             <table class="data-table">
@@ -54,7 +76,12 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
+                    <tr
+                        class="user-row"
+                        data-search="{{ (user.fullName ~ ' ' ~ user.email)|lower }}"
+                        data-role="{{ 'ROLE_ADMIN' in user.roles ? 'ADMIN' : 'USER' }}"
+                        data-wallet="{{ user.wallet ? 'with_wallet' : 'without_wallet' }}"
+                    >
                         <td><span class="id-badge">#U{{ user.id }}</span></td>
                         <td>
                             <div class="owner-cell">
@@ -234,6 +261,25 @@
 {% block javascripts %}
 {{ parent() }}
 <script>
+    function filterUsers() {
+        const searchQuery = document.getElementById('userSearch').value.toLowerCase();
+        const roleFilter = document.getElementById('userRoleFilter').value;
+        const walletFilter = document.getElementById('userWalletFilter').value;
+        const rows = document.querySelectorAll('.user-row');
+
+        rows.forEach(row => {
+            const searchText = row.getAttribute('data-search');
+            const role = row.getAttribute('data-role');
+            const wallet = row.getAttribute('data-wallet');
+
+            const matchesSearch = searchText.includes(searchQuery);
+            const matchesRole = roleFilter === 'all' || role === roleFilter;
+            const matchesWallet = walletFilter === 'all' || wallet === walletFilter;
+
+            row.style.display = matchesSearch && matchesRole && matchesWallet ? '' : 'none';
+        });
+    }
+
     function openEditUserModal(button) {
         const userId = button.dataset.id;
         const walletId = button.dataset.walletId;

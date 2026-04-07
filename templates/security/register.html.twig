@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Nexora</title>
+    <title>Register - Nexora</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
@@ -17,21 +17,21 @@
                     <span>NEXORA</span>
                 </div>
                 <p class="auth-kicker">Integrated Trading Workspace</p>
-                <h1>Login to access your portfolio environment.</h1>
+                <h1>Create your user account.</h1>
                 <p class="auth-copy">
-                    Use your project account to access wallets, assets, portfolios, orders, contracts, and reputation data.
+                    New registrations are created as standard user accounts and receive an empty wallet automatically.
                 </p>
                 <div class="auth-hints">
-                    <div><i class="fas fa-shield-alt"></i> Admin accounts reach full management tools.</div>
-                    <div><i class="fas fa-wallet"></i> User accounts open the wallet linked to that profile.</div>
+                    <div><i class="fas fa-user"></i> Every self-created account is assigned the `USER` role.</div>
+                    <div><i class="fas fa-wallet"></i> A wallet is created automatically so the account can log in immediately.</div>
                 </div>
             </div>
         </section>
 
         <section class="auth-panel auth-form-panel">
             <div class="auth-form-card">
-                <h2>Sign In</h2>
-                <p class="auth-form-copy">Database-backed login for the integrated project.</p>
+                <h2>Create Account</h2>
+                <p class="auth-form-copy">Register a new user profile for the integrated project.</p>
 
                 {% for label, messages in app.flashes %}
                     {% for message in messages %}
@@ -41,12 +41,20 @@
                     {% endfor %}
                 {% endfor %}
 
-                <form method="post" action="{{ path('app_login') }}">
+                <form method="post" action="{{ path('app_register') }}">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" name="full_name" value="{{ form_data.full_name }}" placeholder="Your full name">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>Email</label>
                         <div class="input-with-icon">
                             <i class="fas fa-envelope"></i>
-                            <input type="text" name="email" value="{{ last_email }}" autocomplete="email" placeholder="name@example.com">
+                            <input type="text" name="email" value="{{ form_data.email }}" placeholder="name@example.com">
                         </div>
                     </div>
 
@@ -54,23 +62,24 @@
                         <label>Password</label>
                         <div class="input-with-icon">
                             <i class="fas fa-lock"></i>
-                            <input type="password" name="password" autocomplete="current-password" placeholder="Enter your password">
+                            <input type="password" name="password" placeholder="At least 6 characters">
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-check-circle"></i>
+                            <input type="password" name="confirm_password" placeholder="Repeat your password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
                 </form>
 
                 <div class="auth-switch">
-                    No account yet?
-                    <a href="{{ path('app_register') }}">Create one</a>
-                </div>
-
-                <div class="auth-demo">
-                    <h3>Seeded accounts</h3>
-                    <p><strong>Admin:</strong> admin@nexora.tn / admin123</p>
-                    <p><strong>User:</strong> ayoub1@nexora.tn / user123</p>
-                    <p><strong>User:</strong> test1@nexora.tn / user456</p>
+                    Already have an account?
+                    <a href="{{ path('app_login') }}">Sign in</a>
                 </div>
             </div>
         </section>
