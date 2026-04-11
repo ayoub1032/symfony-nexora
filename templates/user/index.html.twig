@@ -39,10 +39,12 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3>Platform Users</h3>
             <div class="d-flex gap-3 align-items-center">
+                {# USER SEARCH INPUT: filters table rows by full name or email via filterUsers() #}
                 <div class="input-with-icon" style="margin-bottom: 0; min-width: 250px;">
                     <i class="fas fa-search"></i>
                     <input type="text" id="userSearch" placeholder="Search by name or email..." onkeyup="filterUsers()">
                 </div>
+                {# USER ROLE FILTER: filters visible rows by Admin/User role via filterUsers() #}
                 <div class="input-with-icon" style="margin-bottom: 0; min-width: 170px;">
                     <i class="fas fa-user-tag"></i>
                     <select id="userRoleFilter" onchange="filterUsers()">
@@ -51,6 +53,7 @@
                         <option value="USER">Users</option>
                     </select>
                 </div>
+                {# USER WALLET FILTER: filters visible rows by wallet assignment state via filterUsers() #}
                 <div class="input-with-icon" style="margin-bottom: 0; min-width: 190px;">
                     <i class="fas fa-wallet"></i>
                     <select id="userWalletFilter" onchange="filterUsers()">
@@ -62,6 +65,7 @@
             </div>
         </div>
         <div class="table-responsive">
+            {# USER TABLE: global sorting is applied from base.html.twig because this table uses class="data-table" #}
             <table class="data-table">
                 <thead>
                     <tr>
@@ -76,6 +80,7 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
+                    {# USER ROW DATA: values stored in data-* attributes are used by the client-side search/filter function #}
                     <tr
                         class="user-row"
                         data-search="{{ (user.fullName ~ ' ' ~ user.email)|lower }}"
@@ -140,6 +145,7 @@
     </div>
 </div>
 
+{# CREATE USER MODAL: submits the admin create form to route user_create #}
 <div id="addUserModal" class="custom-modal">
     <div class="modal-content glass">
         <div class="modal-header">
@@ -197,6 +203,7 @@
     </div>
 </div>
 
+{# EDIT USER MODAL: form action is filled dynamically in JavaScript with /users/update/{id} #}
 <div id="editUserModal" class="custom-modal">
     <div class="modal-content glass">
         <div class="modal-header">
@@ -261,6 +268,7 @@
 {% block javascripts %}
 {{ parent() }}
 <script>
+    // USER SEARCH + FILTER: reads the search input and dropdown filters, then hides/shows user rows.
     function filterUsers() {
         const searchQuery = document.getElementById('userSearch').value.toLowerCase();
         const roleFilter = document.getElementById('userRoleFilter').value;
@@ -280,6 +288,7 @@
         });
     }
 
+    // EDIT USER MODAL SETUP: copies the clicked row data into the form and targets /users/update/{id}.
     function openEditUserModal(button) {
         const userId = button.dataset.id;
         const walletId = button.dataset.walletId;
@@ -305,6 +314,7 @@
         document.getElementById('editUserModal').style.display = 'block';
     }
 
+    // MODAL CLOSE HANDLER: closes create/edit modals when clicking outside the modal content.
     window.onclick = function(event) {
         if (event.target.className === 'custom-modal') {
             event.target.style.display = 'none';

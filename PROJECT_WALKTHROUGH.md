@@ -8,7 +8,7 @@ If a new chat starts, the first thing to do is read this file before making deci
 
 This repository is a Symfony 6.4 integration project for a group project about a trading / wallet platform called `Nexora`.
 
-The project already contains multiple integrated modules:
+The repository already contains multiple integrated modules:
 
 - Wallets
 - Wallet goals
@@ -19,52 +19,55 @@ The project already contains multiple integrated modules:
 - Notifications
 - User reputation
 
-The user said their own module is `User`, and the goal was to understand the existing integration first, then build the `User` module so it fits the rest of the app.
+The user’s own module is `User`.
 
-## 2. What Was In `out_project`
+The work in this repository was done in phases:
+
+1. understand the already integrated repository and workshop expectations
+2. add a real database-backed `User` module with login
+3. add admin user management
+4. move input validation rules from browser-side HTML constraints to PHP-side validation
+5. add self-registration for normal users
+6. add dedicated search and filtering on the user management screen
+
+## 2. Workshop Context From `out_project`
 
 The folder [out_project](C:/Users/scyzo/OneDrive/Desktop/integration/out_project) contains the workshop resources the team is supposed to follow.
 
-### 2.1 Reverse Engineering Workshop
-
-This part was directly verified from the zip contents:
+Verified relevant files:
 
 - [RE_ Workshop Reverse Engineering version2.zip](C:/Users/scyzo/OneDrive/Desktop/integration/out_project/RE_%20Workshop%20Reverse%20Engineering%20version2.zip)
 - [Workshop Reverse Engineering version 1 (2).zip](C:/Users/scyzo/OneDrive/Desktop/integration/out_project/Workshop%20Reverse%20Engineering%20version%201%20(2).zip)
-
-What was understood from them:
-
-- The expected methodology is to start from an existing database.
-- Generate / reverse-engineer Doctrine entities from that database.
-- Then continue with repositories, controllers, templates, and migrations in Symfony.
-- The workshop includes a custom reverse-engineering script approach and then standard Doctrine migration usage.
-
-This matches the project state: most current entities appear to have been built from the SQL model and then customized manually.
-
-### 2.2 Other Workshops
-
-There are also:
-
 - [workshop-intégration-templates.pdf](C:/Users/scyzo/OneDrive/Desktop/integration/out_project/workshop-int%C3%A9gration-templates.pdf)
 - [Workshop_lesformulaire_CS_25_26.pdf](C:/Users/scyzo/OneDrive/Desktop/integration/out_project/Workshop_lesformulaire_CS_25_26.pdf)
 
-These were not fully extracted locally in a reliable way during the earlier session, but their purpose is clearly about:
+### 2.1 Reverse Engineering Workshop
 
-- integrating templates
-- working with forms
+The reverse-engineering workshop content matched this methodology:
 
-So the high-level interpretation is:
+- start from an existing database
+- generate or reverse-engineer Doctrine entities from that schema
+- continue with repositories, controllers, templates, and migrations
+- keep the implementation aligned with standard Symfony structure
 
-- follow Symfony structure
-- use templates consistently
-- use form-oriented workflows where appropriate
-- stay aligned with the existing integrated UI
+This matches the repository: most current entities clearly come from an existing SQL model and were then customized manually.
+
+### 2.2 Template / Form Workshops
+
+The template/form workshops were not fully parsed line by line during the session, but the practical interpretation used in the work was:
+
+- keep the Symfony MVC structure
+- keep Twig templates consistent with the existing integrated UI
+- keep form workflows Symfony-oriented
+- move real input validation rules into PHP instead of relying only on browser-side HTML constraints
+
+That last point became important later, when the user said the teacher required the `controles de saisie` to be handled in PHP rather than by HTML/browser validation.
 
 ## 3. Initial Project State Before User Module Work
 
 The project is a Symfony app with Doctrine and Twig.
 
-Important files:
+Important baseline files:
 
 - [composer.json](C:/Users/scyzo/OneDrive/Desktop/integration/composer.json)
 - [config/packages/doctrine.yaml](C:/Users/scyzo/OneDrive/Desktop/integration/config/packages/doctrine.yaml)
@@ -75,13 +78,16 @@ Important files:
 
 Before the `User` module changes, the app did not use real database-backed authentication.
 
-It used a fake session-based gateway:
+It used a fake session gateway:
 
-- pick `ADMIN` or `USER`
+- choose `ADMIN` or `USER`
 - if `USER`, choose a wallet from the gateway
 - store `role` and `logged_in_wallet_id` in the session
 
-This behavior originally lived in [HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php) and [gateway.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/home/gateway.html.twig).
+This behavior originally lived in:
+
+- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
+- [templates/home/gateway.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/home/gateway.html.twig)
 
 ### 3.2 Domain Model Before Changes
 
@@ -90,16 +96,16 @@ There was no real `User` entity.
 Instead:
 
 - wallet ownership was stored as plain text `owner` in `wallets`
-- several tables used raw integer columns like `user_id`, `creator_id`, `accepted_by`
-- these were not real Doctrine relations to a `User` entity
+- several tables used raw integer columns such as `user_id`, `creator_id`, `accepted_by`
+- these were not Doctrine relations to a real `User`
 
 Examples:
 
-- [Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php) uses `userId`
-- [Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php) uses `userId`
-- [UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php) uses `userId`
-- [P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php) uses `creatorId` and `acceptedBy`
-- [Wallet.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Wallet.php) only had `owner`, not a `User` relation
+- [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php) uses `userId`
+- [src/Entity/Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php) uses `userId`
+- [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php) uses `userId`
+- [src/Entity/P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php) uses `creatorId` and `acceptedBy`
+- [src/Entity/Wallet.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Wallet.php) only had `owner`, no `User` relation
 
 ### 3.3 SQL Snapshot Before Changes
 
@@ -110,25 +116,28 @@ Examples:
 - `portfolio.user_id`
 - `user_reputation.user_id`
 
-This confirmed the project had a logical user concept, but not a normalized user module.
+This confirmed that the app had a logical user concept in the data model, but not a normalized Symfony-level user module.
 
-## 4. Main Architectural Decision We Took
+## 4. First Main Architectural Decision
 
-Because the user asked for `only login` and wanted the new module integrated with the rest without rewriting everything, the least disruptive design was chosen:
+The user initially asked for `only login` and wanted the new module integrated into the existing app without rewriting the whole codebase.
 
-- add a real `User` table and entity
+The least disruptive decision was:
+
+- add a real `User` table and `User` entity
 - link `Wallet` to `User`
-- use login to establish the active user session
+- use login to establish the active session
 - keep the rest of the modules working as they are for now
-- do not yet refactor all raw `userId` integer fields into full Doctrine relations
+- do not refactor all raw `userId` integer fields into real Doctrine relations yet
 
 This means:
 
 - the real identity source is now the `users` table
 - normal users access the app through the wallet linked to their account
-- admin users can log in without a wallet
+- admins can log in without a wallet
+- most non-wallet user references are still transitional legacy integer fields
 
-## 5. What Was Implemented
+## 5. Phase 1: Real User Entity + Login
 
 ### 5.1 New User Entity
 
@@ -137,7 +146,7 @@ Added:
 - [src/Entity/User.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/User.php)
 - [src/Repository/UserRepository.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Repository/UserRepository.php)
 
-Fields added in `User`:
+Fields in `User`:
 
 - `id`
 - `email`
@@ -152,7 +161,11 @@ This entity implements:
 - `UserInterface`
 - `PasswordAuthenticatedUserInterface`
 
-Even though the login flow currently uses manual password verification and session storage, the entity is now aligned with Symfony security concepts.
+It also contains:
+
+- `getUserIdentifier()`
+- `getRoles()`
+- `hasRole()`
 
 ### 5.2 Wallet Linked To User
 
@@ -162,9 +175,9 @@ Updated:
 
 Added:
 
-- one-to-one nullable `user` relation
+- nullable one-to-one `user` relation
 
-This preserves the existing `owner` string while making wallet ownership connect to a real account.
+This preserved the old `owner` text field while adding a real account relation.
 
 ### 5.3 Login Flow Replaced Old Gateway
 
@@ -172,35 +185,35 @@ Reworked:
 
 - [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
 
-New behavior:
+Behavior after this phase:
 
 - `/` redirects to login if not authenticated
 - `/login` supports GET and POST
 - login checks `email + password` against the `users` table
-- on success, it sets:
+- on success, the session stores:
   - `user_id`
   - `user_name`
   - `user_email`
   - `role`
   - `logged_in_wallet_id`
-- `/logout` clears the session and returns to login
+- `/logout` clears the session and redirects to login
 
 Important rule:
 
 - `ROLE_ADMIN` users can log in without a wallet
 - normal users must have an attached wallet
 
-### 5.4 Login UI Added
+### 5.4 Login UI
 
 Added:
 
 - [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
 
-Styling added in:
+Updated styling:
 
 - [public/css/style.css](C:/Users/scyzo/OneDrive/Desktop/integration/public/css/style.css)
 
-The login page matches the existing Nexora style and includes seeded demo credentials for testing.
+The login page matches the existing Nexora UI and shows seeded demo credentials.
 
 ### 5.5 Security Provider Updated
 
@@ -208,30 +221,27 @@ Updated:
 
 - [config/packages/security.yaml](C:/Users/scyzo/OneDrive/Desktop/integration/config/packages/security.yaml)
 
-Changed provider from in-memory to entity provider:
+Provider changed from in-memory to entity provider:
 
 - class: `App\Entity\User`
 - property: `email`
 
-Important:
+Important limitation:
 
-The app is still effectively session-driven in controller logic.
-This is not yet a full Symfony authenticator-based security system.
-It is a DB-backed login module integrated into the current project style.
+This is still not a full Symfony authenticator-based security system.
+It is a DB-backed login module integrated into the existing project style, with controller/session-driven access logic.
 
-### 5.6 Redirects Updated
+### 5.6 Redirects Updated Across Modules
 
-Several controllers originally redirected unauthenticated users to the old fake gateway route.
+Controllers that originally redirected to the old fake gateway were changed to redirect to the new login route:
 
-Those redirects were changed to the new login route in:
-
-- [AssetController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/AssetController.php)
-- [OrderController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/OrderController.php)
-- [P2pContractController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/P2pContractController.php)
-- [PortfolioController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/PortfolioController.php)
-- [UserReputationController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserReputationController.php)
-- [WalletController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletController.php)
-- [WalletGoalController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletGoalController.php)
+- [src/Controller/AssetController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/AssetController.php)
+- [src/Controller/OrderController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/OrderController.php)
+- [src/Controller/P2pContractController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/P2pContractController.php)
+- [src/Controller/PortfolioController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/PortfolioController.php)
+- [src/Controller/UserReputationController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserReputationController.php)
+- [src/Controller/WalletController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletController.php)
+- [src/Controller/WalletGoalController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletGoalController.php)
 
 ### 5.7 Migration Added
 
@@ -255,14 +265,14 @@ Updated:
 
 It now includes:
 
-- `users` table
-- seeded user data
+- the `users` table
+- seeded user rows
 - `wallets.user_id`
-- migration version entry for the new migration
+- the migration version entry
 
 ## 6. Seeded Accounts
 
-The login module was seeded with these users:
+The migration seeded these accounts:
 
 - Admin
   - email: `admin@nexora.tn`
@@ -274,118 +284,437 @@ The login module was seeded with these users:
   - email: `test1@nexora.tn`
   - password: `user456`
 
-These credentials are shown in the login template for easy testing.
+These are shown in the login template.
 
-## 7. What Was Verified
+## 7. Phase 2: Admin User Management
 
-PHP syntax was checked with `php -l` for the edited PHP files:
+Later, the user asked that the admin should be able to:
 
-- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
+- add users
+- edit users
+- remove users
+- list all users
+
+This was implemented as a custom back-office user management screen.
+
+### 7.1 User CRUD Controller
+
+Added:
+
+- [src/Controller/UserController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserController.php)
+
+Routes added:
+
+- `GET /users` -> list users
+- `POST /users/create` -> create user
+- `POST /users/update/{id}` -> update user
+- `POST /users/delete/{id}` -> delete user
+
+Important business rules in that controller:
+
+- only admins can access these routes
+- email uniqueness is checked before create/update
+- passwords are hashed with Symfony’s password hasher
+- password minimum length is enforced in PHP
+- a wallet can only be assigned if it is not already linked to another user
+- when assigning a wallet, the wallet owner text is synchronized with the user full name
+- the currently logged-in admin cannot delete their own account
+- if the current logged-in user edits their own profile, session values are refreshed
+
+### 7.2 User Management UI
+
+Added:
+
+- [templates/user/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user/index.html.twig)
+
+Added in sidebar:
+
+- [templates/base.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/base.html.twig)
+
+The `/users` page includes:
+
+- user list
+- stats cards
+- add user modal
+- edit user modal
+- delete action
+- wallet assignment / unassignment
+- role selection
+
+### 7.3 User Module Search / Filter / Sort
+
+The user later asked whether the user module had `recherche et tri`.
+
+Status after implementation:
+
+- sorting already worked through the shared sortable table script in [templates/base.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/base.html.twig)
+- dedicated user-module search/filter UI was then added to [templates/user/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user/index.html.twig)
+
+Dedicated features on `/users` now include:
+
+- search by name or email
+- filter by role: `Admin` / `User`
+- filter by wallet state: `With Wallet` / `Without Wallet`
+
+Implementation detail:
+
+- rows use `data-*` attributes
+- filtering is client-side JavaScript scoped to the user table
+
+## 8. Phase 3: Input Validation Moved To PHP
+
+The user said the teacher required `controles de saisie` to be done in PHP rather than in HTML/browser validation.
+
+As a result, the implementation was adjusted to remove HTML/browser validation dependence and move the real validation rules into PHP.
+
+### 8.1 Server-Side Validation Added To Entities
+
+Validation constraints were added to:
+
+- [src/Entity/Asset.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Asset.php)
+- [src/Entity/Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php)
+- [src/Entity/P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php)
+- [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php)
+- [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php)
+
+Validation already existed earlier on:
+
 - [src/Entity/User.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/User.php)
 - [src/Entity/Wallet.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Wallet.php)
-- [src/Repository/UserRepository.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Repository/UserRepository.php)
-- [migrations/Version20260407110000.php](C:/Users/scyzo/OneDrive/Desktop/integration/migrations/Version20260407110000.php)
+- [src/Entity/WalletGoal.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/WalletGoal.php)
 
-All passed syntax checks.
+### 8.2 Controllers Updated To Enforce PHP Validation
 
-## 8. Important Limitation At The Time Of The Changes
+Controllers updated to use `ValidatorInterface` and enforce server-side checks:
 
-The Symfony app was not fully runnable during the implementation session because `vendor/` was missing.
+- [src/Controller/AssetController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/AssetController.php)
+- [src/Controller/OrderController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/OrderController.php)
+- [src/Controller/P2pContractController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/P2pContractController.php)
+- [src/Controller/PortfolioController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/PortfolioController.php)
+- [src/Controller/UserReputationController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserReputationController.php)
+- [src/Controller/WalletController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletController.php)
+- [src/Controller/WalletGoalController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletGoalController.php)
+- [src/Controller/UserController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserController.php)
+- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
 
-That means:
+Specific additions:
 
-- Symfony console commands could not run
-- full application runtime could not be verified end-to-end
+- login email and password validation in PHP
+- user password length validation in PHP
+- wallet goal deadline parsing guarded with try/catch
+- order type / contract type / status normalized before validation
 
-Because of that, after the code changes, the user was told to do:
+### 8.3 Browser-Side Validation Attributes Removed From Templates
 
-1. install Composer if missing
-2. run `composer install`
-3. run the new migration
-4. test the login flow
+The active Twig forms were cleaned to remove browser-enforced attributes such as:
 
-## 9. What The User Needs To Do After These Changes
+- `required`
+- `min`
+- `max`
+- `minlength`
+- `type="email"`
+- `type="number"`
+- `type="date"`
 
-If starting from this repo state, the next setup steps are:
+Affected templates included:
 
-1. Install Composer if it is not installed.
-2. In the project root, run:
+- [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
+- [templates/user/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user/index.html.twig)
+- [templates/asset/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/asset/index.html.twig)
+- [templates/wallet/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/wallet/index.html.twig)
+- [templates/wallet_goal/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/wallet_goal/index.html.twig)
+- [templates/portfolio/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/portfolio/index.html.twig)
+- [templates/order/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/order/index.html.twig)
+- [templates/p2p_contract/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/p2p_contract/index.html.twig)
+- [templates/user_reputation/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user_reputation/index.html.twig)
+
+As a result, validation errors now come from Symfony/PHP flash messages rather than browser blocking.
+
+## 9. Phase 4: User Self-Registration
+
+The user later asked:
+
+- create an account utilisateur with login
+- the created account must automatically be `user`, not `admin`
+
+This was implemented as a normal self-registration flow.
+
+### 9.1 Registration Route And Logic
+
+Updated:
+
+- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
+
+Added route:
+
+- `GET|POST /register`
+
+Registration behavior:
+
+- full name, email, password, and confirmation are submitted
+- email format is checked in PHP
+- duplicate email is refused
+- password minimum length is enforced in PHP
+- password confirmation must match
+- created account always gets `ROLE_USER`
+- a wallet is created automatically with balance `0.00`
+- the wallet is linked to the created user immediately
+- success redirects to login with a flash message
+
+Important design reason:
+
+The existing login flow requires non-admin users to have a linked wallet.
+Therefore registration auto-creates a wallet so that a newly created user can actually log in immediately.
+
+### 9.2 Registration UI
+
+Added:
+
+- [templates/security/register.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/register.html.twig)
+
+Updated:
+
+- [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
+- [public/css/style.css](C:/Users/scyzo/OneDrive/Desktop/integration/public/css/style.css)
+
+UI behavior:
+
+- `/login` now includes a link to `/register`
+- `/register` includes a link back to `/login`
+- the registration page visually matches the auth UI already used for login
+
+## 10. Technical Constraint Discussion For The User Module
+
+At one point, the user asked whether the implemented `User` module respected teacher constraints such as:
+
+- each module must contain at least two entities and one relation
+- one shared database
+- image URL format instead of blob
+- no FOSUserBundle
+- no AdminBundle
+- both frontOffice and backOffice aspects
+
+Practical conclusion reached:
+
+- one shared DB: respected
+- no FOSUserBundle: respected
+- no AdminBundle: respected
+- frontOffice/backOffice for user module: partially respected then improved
+  - frontOffice: login and later registration
+  - backOffice: admin user management
+- relation: respected through `User` <-> `Wallet`
+- strict “minimum two dedicated entities for the User module”: still potentially weak if the teacher interprets `Wallet` as belonging only to the wallet module, not the user module
+
+So the main remaining academic risk is:
+
+- the `User` module has one strong dedicated entity (`User`) and one relation (`Wallet`)
+- but if the teacher strictly requires two entities created specifically for the user module itself, that is still not fully satisfied
+
+Possible future fix if needed:
+
+- add `UserProfile`, `UserPreference`, `UserAddress`, or another clearly user-owned entity
+
+## 11. Recurrent Environment Issue: OneDrive Cache / Log Write Problems
+
+During testing, a repeated runtime problem appeared:
+
+- Symfony / Doctrine / Twig sometimes failed with errors saying `var/cache` or `var/log` was not writable
+- the repository lives inside `OneDrive`
+- Windows/OneDrive attributes and ACL behavior caused intermittent write issues for:
+  - `var/cache/dev`
+  - `var/cache/dev/doctrine/orm/Proxies`
+  - `var/cache/dev/twig/...`
+  - `var/log`
+
+The practical quick fix used repeatedly was:
 
 ```powershell
-composer install
+attrib -R var /S /D
+php bin\console cache:clear
 ```
 
-or if Composer is only available as the local phar:
+Then run the project:
+
+```powershell
+php -S 127.0.0.1:8000 -t public
+```
+
+Important:
+
+The durable fix is to move the project outside OneDrive, for example to a normal local folder such as `C:\projects\integration`.
+
+## 12. What Was Verified During The Work
+
+Different things were verified at different phases.
+
+### 12.1 PHP Syntax
+
+`php -l` was run successfully on many edited files including:
+
+- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
+- [src/Controller/UserController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserController.php)
+- [src/Controller/AssetController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/AssetController.php)
+- [src/Controller/OrderController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/OrderController.php)
+- [src/Controller/P2pContractController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/P2pContractController.php)
+- [src/Controller/PortfolioController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/PortfolioController.php)
+- [src/Controller/UserReputationController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/UserReputationController.php)
+- [src/Controller/WalletGoalController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/WalletGoalController.php)
+- [src/Entity/User.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/User.php)
+- [src/Entity/Wallet.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Wallet.php)
+- [src/Entity/Asset.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Asset.php)
+- [src/Entity/Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php)
+- [src/Entity/P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php)
+- [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php)
+- [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php)
+- [migrations/Version20260407110000.php](C:/Users/scyzo/OneDrive/Desktop/integration/migrations/Version20260407110000.php)
+
+### 12.2 Twig Syntax
+
+Twig syntax was also verified successfully for important edited templates, including:
+
+- [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
+- [templates/security/register.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/register.html.twig)
+- [templates/user/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user/index.html.twig)
+
+### 12.3 Route Verification
+
+Important route existence was verified, including:
+
+- `user_index` -> `/users`
+- `app_register` -> `/register`
+
+## 13. Current Functional State Of The User Module
+
+As of the latest changes, the `User` module supports:
+
+- real DB-backed users
+- login via `/login`
+- logout via `/logout`
+- self-registration via `/register`
+- automatic `ROLE_USER` for self-registration
+- automatic wallet creation for self-registered users
+- admin login without wallet
+- normal user login with linked wallet
+- admin-only user list
+- admin create / edit / delete user
+- wallet assignment and unassignment from admin UI
+- dedicated user search
+- dedicated user role filter
+- dedicated user wallet-state filter
+- shared table sorting through the global table script
+
+## 14. Current Architectural Limitation
+
+The app is still partially normalized.
+
+Authentication and account identity are real now, but several business modules still use legacy integer user fields instead of real relations:
+
+- [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php) -> `userId`
+- [src/Entity/Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php) -> `userId`
+- [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php) -> `userId`
+- [src/Entity/P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php) -> `creatorId`, `acceptedBy`
+
+So:
+
+- `Wallet` <-> `User`: integrated
+- authentication <-> `User`: integrated
+- admin CRUD <-> `User`: integrated
+- registration <-> `User`: integrated
+- most domain modules <-> `User`: not yet fully normalized
+
+## 15. Recommended Next Refactor
+
+The next major technical step is still to replace raw user integer columns with real Doctrine relations.
+
+Priority targets:
+
+1. [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php)
+   Replace `userId` with a `User` relation
+
+2. [src/Entity/Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php)
+   Replace `userId` with a `User` relation
+
+3. [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php)
+   Replace `userId` with a `User` relation
+
+4. [src/Entity/P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php)
+   Replace `creatorId` and `acceptedBy` with `User` relations
+
+5. Update controllers and Twig templates accordingly
+
+If academic compliance requires two clearly user-owned entities, an additional dedicated user entity should also be added.
+
+## 16. Current Setup / Run Instructions
+
+From the project root:
+
+1. install dependencies if needed
+
+```powershell
+php composer.phar install
+```
+
+or:
 
 ```powershell
 C:\xampp\php\php.exe composer.phar install
 ```
 
-3. Run migrations:
+2. run migrations
 
 ```powershell
-php bin/console doctrine:migrations:migrate
+php bin\console doctrine:migrations:migrate
 ```
 
-4. Start the application with the preferred local setup.
+or run the user migration directly if needed:
 
-5. Test the seeded logins.
+```powershell
+php bin\console doctrine:migrations:execute DoctrineMigrations\\Version20260407110000 --up
+```
 
-## 10. Current Project State After User Module Work
+3. clear cache if OneDrive causes problems
 
-After the changes, the project is in this state:
+```powershell
+attrib -R var /S /D
+php bin\console cache:clear
+```
 
-- real `User` module exists
-- login is DB-backed
-- user session is based on an actual account
-- normal users are linked to wallets
-- admin can log in separately
-- the rest of the modules still mostly use legacy integer fields for user references
+4. start the local server
 
-So the system is now partially normalized:
+```powershell
+php -S 127.0.0.1:8000 -t public
+```
 
-- authentication and account identity are real
-- domain relations outside wallet ownership are still transitional
+5. test:
 
-## 11. Recommended Next Refactor
+- login: `http://127.0.0.1:8000/login`
+- register: `http://127.0.0.1:8000/register`
+- admin user management: `http://127.0.0.1:8000/users`
 
-The next major step is to replace raw user integer columns with real Doctrine relations.
+## 17. Things To Avoid In Future Work
 
-Priority targets:
-
-1. [Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php)
-   Replace `userId` with `ManyToOne` or `OneToOne User`
-
-2. [Order.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Order.php)
-   Replace `userId` with `ManyToOne User`
-
-3. [UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php)
-   Replace `userId` with `OneToOne` or `ManyToOne User`
-
-4. [P2pContract.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/P2pContract.php)
-   Replace `creatorId` and `acceptedBy` with `User` relations
-
-5. Update controllers and Twig templates accordingly
-
-This was already identified as the next logical step after login-only user module completion.
-
-## 12. Things To Avoid In Future Work
-
-- Do not reintroduce the fake role gateway as the main auth mechanism.
+- Do not reintroduce the fake gateway as the main auth mechanism.
 - Do not create a second parallel user identity system.
-- Do not break current wallet-based user views until all legacy `userId` fields are refactored properly.
-- Do not assume Symfony authentication is fully modernized yet; it is only partially integrated.
+- Do not break wallet-based user access while legacy integer references still exist elsewhere.
+- Do not assume Symfony security is fully modernized; it is still controller/session-driven.
+- Do not rely on browser-only HTML validation for core business input checks.
+- Do not forget the OneDrive cache/log write issue when diagnosing random runtime failures.
 
-## 13. How Future Chats Should Use This File
+## 18. How Future Chats Should Use This File
 
-If a future chat starts, the context should be:
+If a future chat starts, the working assumptions should be:
 
 - this is a Symfony 6.4 group integration project
-- workshops emphasized reverse engineering from DB and structured Symfony integration
-- initial app had fake session auth and no real user entity
-- a login-only `User` module has now been added
+- workshops emphasized reverse engineering from an existing DB and then standard Symfony integration
+- the repository originally had fake session auth and no real user entity
+- a real DB-backed `User` module was added
 - `Wallet` is linked to `User`
-- login is database-backed
-- the next step is refactoring remaining user-related integer fields into real relations
+- login is DB-backed
+- admin user CRUD now exists
+- self-registration for normal users now exists
+- registration auto-creates a wallet
+- user-module search/filtering now exists on `/users`
+- major input validation was moved to PHP-side checks
+- the next core technical refactor is replacing remaining legacy integer user fields with real Doctrine relations
 
-Future implementation work should start from that assumption instead of re-analyzing the whole repository from zero.
+Future implementation work should start from that state instead of re-analyzing the whole repository from zero.

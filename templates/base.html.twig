@@ -147,13 +147,16 @@
             }
 
             // 2. TABLE SORTING (Tri)
+            // GLOBAL SORT SETUP: any table with class="data-table" becomes sortable, including the user table.
             const tables = document.querySelectorAll('.data-table');
             tables.forEach(table => {
                 const headers = table.querySelectorAll('thead th');
                 headers.forEach((header, index) => {
                     const headerText = header.textContent.trim().toLowerCase();
+                    // ACTIONS COLUMN IS SKIPPED: action buttons should not be sorted.
                     if(headerText === 'actions') return;
                     
+                    // MAKE EACH HEADER LOOK CLICKABLE AND ADD A SORT ICON IF MISSING.
                     header.style.cursor = 'pointer';
                     header.title = "Click to sort";
                     
@@ -161,13 +164,17 @@
                         header.innerHTML += ' <i class="fas fa-sort text-muted" style="font-size: 0.8em; margin-left: 5px;"></i>';
                     }
                     
+                    // CLICK HANDLER: sorts the clicked column in ascending/descending order.
                     header.addEventListener('click', () => {
                         const tbody = table.querySelector('tbody');
                         const rows = Array.from(tbody.querySelectorAll('tr'));
+                        // DO NOTHING IF THE TABLE IS EMPTY OR ONLY SHOWS THE EMPTY-STATE ROW.
                         if(rows.length === 0 || rows[0].querySelector('.empty-state')) return;
                         
+                        // CHECK CURRENT DIRECTION: if already ascending, the next click switches to descending.
                         const isAsc = header.classList.contains('sort-asc');
                         
+                        // RESET ALL HEADER STATES AND ICONS BEFORE APPLYING THE NEW SORT STATE.
                         headers.forEach(h => {
                             h.classList.remove('sort-asc', 'sort-desc');
                             const icon = h.querySelector('i');
@@ -176,6 +183,7 @@
                             }
                         });
                         
+                        // dirModifier CONTROLS SORT ORDER: 1 = ascending, -1 = descending.
                         const dirModifier = isAsc ? -1 : 1;
                         if(isAsc) {
                             header.classList.add('sort-desc');
@@ -189,15 +197,18 @@
                             const aCol = a.querySelectorAll('td')[index].textContent.trim();
                             const bCol = b.querySelectorAll('td')[index].textContent.trim();
                             
+                            // TRY NUMERIC COMPARISON FIRST FOR COLUMNS LIKE IDs, COUNTS, OR AMOUNTS.
                             const aNum = parseFloat(aCol.replace(/[^0-9.-]+/g,""));
                             const bNum = parseFloat(bCol.replace(/[^0-9.-]+/g,""));
                             
                             if(!isNaN(aNum) && !isNaN(bNum) && isFinite(aNum) && isFinite(bNum)) {
                                 return (aNum - bNum) * dirModifier;
                             }
+                            // FALL BACK TO TEXT COMPARISON FOR NORMAL STRING COLUMNS.
                             return aCol.localeCompare(bCol) * dirModifier;
                         });
                         
+                        // RE-APPEND ROWS IN THE NEW ORDER TO UPDATE THE VISIBLE TABLE.
                         rows.forEach(row => tbody.appendChild(row));
                     });
                 });
