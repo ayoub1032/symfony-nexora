@@ -25,7 +25,6 @@ class TransactionRepository extends ServiceEntityRepository
             ->select('COALESCE(c.name, \'Uncategorized\') as name', 'COALESCE(c.color, \'#94a3b8\') as color', 'SUM(t.amount) as total')
             ->leftJoin('t.category', 'c')
             ->where('t.wallet = :walletId')
-            ->andWhere('t.type = \'In\'') // On ne montre que les entrées pour la répartition des actifs
             ->setParameter('walletId', $walletId)
             ->groupBy('c.id')
             ->getQuery()

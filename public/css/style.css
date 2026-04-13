@@ -1,12 +1,25 @@
 :root {
     --bg-dark: #0f172a;
     --bg-card: #1e293b;
+    --bg-sidebar: #020617;
     --accent: #6366f1;
     --accent-hover: #4f46e5;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.05);
     --sidebar-w: 260px;
     --glass: rgba(30, 41, 59, 0.7);
+    --transition-speed: 0.3s;
+}
+
+body.light-mode {
+    --bg-dark: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-sidebar: #f1f5f9;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: rgba(0, 0, 0, 0.05);
+    --glass: rgba(255, 255, 255, 0.8);
 }
 
 * {
@@ -20,6 +33,7 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-main);
     overflow-x: hidden;
+    transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
 .app-container {
@@ -30,13 +44,14 @@ body {
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-w);
-    background: #020617;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     padding: 24px;
     position: fixed;
     height: 100vh;
+    transition: background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .logo {
@@ -1199,4 +1214,46 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     margin-bottom: 8px;
+}
+/* --- Theme Toggle Button --- */
+.theme-toggle {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle:hover {
+    transform: rotate(15deg) scale(1.1);
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.theme-toggle .sun-icon { display: none; }
+.theme-toggle .moon-icon { display: block; }
+
+body.light-mode .theme-toggle .sun-icon { display: block; }
+body.light-mode .theme-toggle .moon-icon { display: none; }
+
+body.light-mode .glass-card, 
+body.light-mode .glass {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+body.light-mode .nav-link:hover,
+body.light-mode .nav-link.active {
+    background: var(--accent);
+    color: white;
 }

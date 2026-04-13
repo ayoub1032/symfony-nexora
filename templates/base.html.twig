@@ -77,6 +77,10 @@
                         <input type="text" placeholder="Search data...">
                     </div>
                     <div class="header-actions">
+                        <button id="theme-toggle" class="theme-toggle" title="Toggle Light/Dark Mode">
+                            <i class="fas fa-moon moon-icon"></i>
+                            <i class="fas fa-sun sun-icon"></i>
+                        </button>
                         {{ render(controller('App\\Controller\\NotificationController::renderHeader')) }}
                         <div class="user-profile">
                             <div class="user-info">
@@ -132,6 +136,22 @@
 
         {% block javascripts %}
         <script>
+        // --- Theme Management ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        
+        // Initialize Theme
+        const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        if (currentTheme === 'light') {
+            body.classList.add('light-mode');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            const theme = body.classList.contains('light-mode') ? 'light' : 'dark';
+            localStorage.setItem('theme', theme);
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             // 1. GLOBAL SEARCH
             const searchInput = document.querySelector('.search-bar input');

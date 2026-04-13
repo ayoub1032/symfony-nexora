@@ -121,6 +121,26 @@ class DashboardController extends AbstractController
             'insight_text' => $topCategory ? "Votre activité est dominée par {$topCategory['name']}. Pensez à diversifier pour réduire les risques." : "Commencez à trader pour obtenir une analyse Nexora complète."
         ];
 
+        // --- Executive Analysis Logic (Functional Cash Flow) ---
+        $statsIn = $transactionRepository->findBy(['wallet' => $wallet, 'type' => 'In']);
+        $statsOut = $transactionRepository->findBy(['wallet' => $wallet, 'type' => 'Out']);
+        
+        $totalIn = array_reduce($statsIn, fn($c, $t) => $c + (float)$t->getAmount(), 0);
+        $totalOut = array_reduce($statsOut, fn($c, $t) => $c + (float)$t->getAmount(), 0);
+        
+        $topCategory = !empty($stats) ? $stats[0] : null;
+        
+        // --- Analysis Summary Object ---
+        $analysis = [
+            'top_category' => $topCategory ? $topCategory['name'] : 'N/A',
+            'health_score' => ($totalIn > $totalOut) ? 85 : 45,
+            'total_in' => $totalIn,
+            'total_out' => $totalOut,
+            'insight_text' => $totalIn > $totalOut 
+                ? "Flux positif : Vos dépôts (" . number_format($totalIn, 2) . " TND) dépassent vos retraits. Votre croissance est saine."
+                : "Alerte Cash-Flow : Vos retraits (" . number_format($totalOut, 2) . " TND) dépassent vos dépôts. Surveillez votre balance."
+        ];
+
         return $this->render('dashboard/index.html.twig', [
             'chart1' => $chart1,
             'chart2' => $chart2,
