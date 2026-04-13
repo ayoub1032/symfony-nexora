@@ -419,24 +419,29 @@
         });
     });
 
-    // --- Currency Switcher Logic ---
-    document.querySelectorAll('.btn-currency').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.btn-currency').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
+    // --- Currency Switcher Logic (Robust for Turbo) ---
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-currency');
+        if (!btn) return;
+        
+        document.querySelectorAll('.btn-currency').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
 
-            const rate = parseFloat(this.getAttribute('data-rate'));
-            const currency = this.getAttribute('data-currency');
+        const rate = parseFloat(btn.getAttribute('data-rate'));
+        const currency = btn.getAttribute('data-currency');
 
-            document.querySelectorAll('.val-currency').forEach(el => {
-                const baseValue = parseFloat(el.getAttribute('data-base'));
+        if (isNaN(rate)) return;
+
+        document.querySelectorAll('.val-currency').forEach(el => {
+            const baseValue = parseFloat(el.getAttribute('data-base'));
+            if (!isNaN(baseValue)) {
                 const converted = baseValue * rate;
                 el.innerText = converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            });
+            }
+        });
 
-            document.querySelectorAll('.unit-currency').forEach(el => {
-                el.innerText = currency;
-            });
+        document.querySelectorAll('.unit-currency').forEach(el => {
+            el.innerText = currency;
         });
     });
 
