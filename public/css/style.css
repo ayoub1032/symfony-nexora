@@ -1071,36 +1071,50 @@ body {
     }
 }
 
-/* Wallet Interactive Animation */
-.wallet-interactive-zone {
-    margin-top: 40px;
+/* Giant Interactive Background Icon */
+.wallet-background-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
     display: flex;
-    justify-content: center;
-    perspective: 1000px;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 5%;
+}
+
+.wallet-interactive-zone {
+    perspective: 2000px;
+    opacity: 0.25;
+    filter: blur(1px) saturate(1.2);
 }
 
 .wallet-3d-wrap {
-    width: 200px;
-    height: 200px;
+    width: 850px;
+    height: 850px;
     position: relative;
     transform-style: preserve-3d;
-    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-    transition: transform 0.1s ease-out;
+    transform: 
+        rotateX(var(--rx, 0deg)) 
+        rotateY(var(--ry, 0deg)) 
+        translate(var(--mx, 0px), var(--my, 0px));
+    transition: transform 0.2s cubic-bezier(0.03, 0.98, 0.52, 0.99);
 }
 
 .wallet-svg {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 40px 60px rgba(0, 0, 0, 0.8));
 }
 
 .wallet-svg rect {
-    transition: 0.3s;
+    transition: 0.5s;
 }
-
-.wallet-interactive-zone:hover .wallet-svg circle[fill="url(#walletGlow)"] {
-    stop-opacity: 0.5;
-}/* Goal Achievement Celebration */
+/* Goal Achievement Celebration */
 .goal-row.achieved {
     background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, rgba(251, 191, 36, 0.05) 100%);
     position: relative;

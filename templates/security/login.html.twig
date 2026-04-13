@@ -26,41 +26,6 @@
                     <div><i class="fas fa-wallet"></i> User accounts open the wallet linked to that profile.</div>
                 </div>
 
-                <!-- Interactive Wallet Icon Section -->
-                <div class="wallet-interactive-zone">
-                    <div class="wallet-3d-wrap" id="walletWrap">
-                        <svg class="wallet-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Glow Background -->
-                            <defs>
-                                <radialGradient id="walletGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                    <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.3" />
-                                    <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
-                                </radialGradient>
-                                <linearGradient id="walletBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style="stop-color:#334155" />
-                                    <stop offset="100%" style="stop-color:#1e293b" />
-                                </linearGradient>
-                            </defs>
-                            
-                            <circle cx="100" cy="100" r="80" fill="url(#walletGlow)" />
-                            
-                            <!-- Wallet Body -->
-                            <rect x="40" y="70" width="120" height="80" rx="12" fill="url(#walletBodyGrad)" stroke="var(--accent)" stroke-width="1" />
-                            
-                            <!-- Front Pocket (Glass Effect) -->
-                            <rect x="40" y="90" width="120" height="60" rx="12" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1" style="backdrop-filter: blur(4px);" />
-                            
-                            <!-- Wallet Flap -->
-                            <path d="M40 70 L100 110 L160 70" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
-                            
-                            <!-- Coin -->
-                            <circle cx="140" cy="65" r="15" fill="#fbbf24" stroke="#d97706" stroke-width="1">
-                                <animateTransform attributeName="transform" type="translate" values="0 0; 0 -5; 0 0" dur="3s" repeatCount="indefinite" />
-                            </circle>
-                            <text x="135" y="70" font-family="Outfit" font-size="12" font-weight="bold" fill="#d97706">N</text>
-                        </svg>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -112,6 +77,34 @@
         </section>
     </main>
 
+    <!-- Giant Interactive Background Icon -->
+    <div class="wallet-background-wrapper">
+        <div class="wallet-interactive-zone">
+            <div class="wallet-3d-wrap" id="walletWrap">
+                <svg class="wallet-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="walletGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                            <stop offset="0%" style="stop-color:var(--accent);stop-opacity:0.3" />
+                            <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0" />
+                        </radialGradient>
+                        <linearGradient id="walletBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#334155" />
+                            <stop offset="100%" style="stop-color:#1e293b" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="80" fill="url(#walletGlow)" />
+                    <rect x="40" y="70" width="120" height="80" rx="12" fill="url(#walletBodyGrad)" stroke="var(--accent)" stroke-width="0.5" />
+                    <rect x="40" y="90" width="120" height="60" rx="12" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="0.5" />
+                    <path d="M40 70 L100 110 L160 70" fill="none" stroke="var(--accent)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+                    <circle cx="140" cy="65" r="15" fill="#fbbf24" stroke="#d97706" stroke-width="0.5" opacity="0.5">
+                        <animateTransform attributeName="transform" type="translate" values="0 0; 0 -5; 0 0" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <text x="135" y="70" font-family="Outfit" font-size="12" font-weight="bold" fill="#d97706" opacity="0.5">N</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('mousemove', (e) => {
             const wrap = document.getElementById('walletWrap');
@@ -120,12 +113,17 @@
             const { clientX, clientY } = e;
             const { innerWidth, innerHeight } = window;
 
-            // Calculate rotation based on cursor position (-15 to 15 degrees)
-            const rotateY = ((clientX / innerWidth) - 0.5) * 40;
-            const rotateX = ((clientY / innerHeight) - 0.5) * -40;
+            // Amplitude modérée pour un effet cinématique (icon géante)
+            const rotateY = ((clientX / innerWidth) - 0.5) * 50;
+            const rotateX = ((clientY / innerHeight) - 0.5) * -50;
+
+            const moveX = ((clientX / innerWidth) - 0.5) * 30;
+            const moveY = ((clientY / innerHeight) - 0.5) * 30;
 
             wrap.style.setProperty('--rx', `${rotateX}deg`);
             wrap.style.setProperty('--ry', `${rotateY}deg`);
+            wrap.style.setProperty('--mx', `${moveX}px`);
+            wrap.style.setProperty('--my', `${moveY}px`);
         });
     </script>
 </body>
