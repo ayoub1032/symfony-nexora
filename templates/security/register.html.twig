@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Nexora</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-panel auth-brand">
+            <div class="auth-brand-inner">
+                <div class="auth-logo">
+                    <span class="auth-logo-box"><i class="fas fa-bolt"></i></span>
+                    <span>NEXORA</span>
+                </div>
+                <p class="auth-kicker">Integrated Trading Workspace</p>
+                <h1>Create your user account.</h1>
+                <p class="auth-copy">
+                    New registrations are created as standard user accounts and receive an empty wallet automatically.
+                </p>
+                <div class="auth-hints">
+                    <div><i class="fas fa-user"></i> Every self-created account is assigned the `USER` role.</div>
+                    <div><i class="fas fa-wallet"></i> A wallet is created automatically so the account can log in immediately.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-panel auth-form-panel">
+            <div class="auth-form-card">
+                <h2>Create Account</h2>
+                <p class="auth-form-copy">Register a new user profile for the integrated project.</p>
+
+                {% for label, messages in app.flashes %}
+                    {% for message in messages %}
+                        <div class="auth-flash auth-flash-{{ label == 'danger' ? 'danger' : 'info' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+
+                <form method="post" action="{{ path('app_register') }}">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" name="full_name" value="{{ form_data.full_name }}" placeholder="Your full name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-envelope"></i>
+                            <input type="text" name="email" value="{{ form_data.email }}" placeholder="name@example.com">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" name="password" placeholder="At least 6 characters">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-check-circle"></i>
+                            <input type="password" name="confirm_password" placeholder="Repeat your password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+
+                <div class="auth-switch">
+                    Already have an account?
+                    <a href="{{ path('app_login') }}">Sign in</a>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

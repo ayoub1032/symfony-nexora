@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nexora Wallet | Bilan Financier</title>
+    <style>
+        body { font-family: 'Helvetica', sans-serif; color: #1e293b; margin: 0; padding: 0; }
+        .header { background: #0f172a; color: white; padding: 40px; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+        .container { padding: 40px; }
+        .stats-grid { display: block; margin-bottom: 40px; }
+        .stat-box { 
+            display: inline-block; 
+            width: 45%; 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #e2e8f0;
+        }
+        .stat-label { color: #64748b; font-size: 12px; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-value { font-size: 20px; font-weight: bold; color: #0f172a; }
+        
+        h3 { border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 40px; color: #334155; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; color: #475569; font-size: 13px; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        
+        .type-in { color: #10b981; font-weight: bold; }
+        .type-out { color: #ef4444; font-weight: bold; }
+        
+        .footer { position: fixed; bottom: 30px; width: 100%; text-align: center; font-size: 10px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">NEXORA WALLET</div>
+        <div style="margin-top: 10px; opacity: 0.8;">Bilan Financier Officiel - {{ date|date('d/m/Y H:i') }}</div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-box" style="margin-right: 5%;">
+                <div class="stat-label">Propriétaire</div>
+                <div class="stat-value">{{ wallet.owner }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Solde Total</div>
+                <div class="stat-value">{{ wallet.balance|number_format(2, '.', ',') }} TND</div>
+            </div>
+        </div>
+
+        <h3>Historique Récent (20 dernières transactions)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Catégorie</th>
+                    <th>Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trans in transactions %}
+                <tr>
+                    <td>{{ trans.createdAt|date('d/m/Y H:i') }}</td>
+                    <td>
+                        <span class="type-{{ trans.type|lower }}">
+                            {{ trans.type == 'In' ? 'ENTRÉE' : 'SORTIE' }}
+                        </span>
+                    </td>
+                    <td>{{ trans.category.name|default('Général') }}</td>
+                    <td>{{ trans.amount|number_format(2, '.', ',') }} TND</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #94a3b8;">Aucune transaction enregistrée.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        Nexora Wallet © 2026 - Plateforme de gestion d'actifs numériques sécurisée - Document généré par IA.
+    </div>
+</body>
+</html>

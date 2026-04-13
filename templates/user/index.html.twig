@@ -1,0 +1,324 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Users - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">User Administration</h1>
+        <button class="btn btn-primary" onclick="document.getElementById('addUserModal').style.display='block'">
+            <i class="fas fa-user-plus"></i> New User
+        </button>
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Registered Users</span>
+                <span class="stat-value">{{ users|length }}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Users With Wallets</span>
+                <span class="stat-value">{{ users|filter(user => user.wallet is not null)|length }}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-user-shield"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Administrators</span>
+                <span class="stat-value">{{ users|filter(user => 'ROLE_ADMIN' in user.roles)|length }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Platform Users</h3>
+            <div class="d-flex gap-3 align-items-center">
+                {# USER SEARCH INPUT: filters table rows by full name or email via filterUsers() #}
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 250px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="userSearch" placeholder="Search by name or email..." onkeyup="filterUsers()">
+                </div>
+                {# USER ROLE FILTER: filters visible rows by Admin/User role via filterUsers() #}
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 170px;">
+                    <i class="fas fa-user-tag"></i>
+                    <select id="userRoleFilter" onchange="filterUsers()">
+                        <option value="all">All Roles</option>
+                        <option value="ADMIN">Admins</option>
+                        <option value="USER">Users</option>
+                    </select>
+                </div>
+                {# USER WALLET FILTER: filters visible rows by wallet assignment state via filterUsers() #}
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 190px;">
+                    <i class="fas fa-wallet"></i>
+                    <select id="userWalletFilter" onchange="filterUsers()">
+                        <option value="all">All Wallet States</option>
+                        <option value="with_wallet">With Wallet</option>
+                        <option value="without_wallet">Without Wallet</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            {# USER TABLE: global sorting is applied from base.html.twig because this table uses class="data-table" #}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Profile</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Wallet</th>
+                        <th>Created At</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    {# USER ROW DATA: values stored in data-* attributes are used by the client-side search/filter function #}
+                    <tr
+                        class="user-row"
+                        data-search="{{ (user.fullName ~ ' ' ~ user.email)|lower }}"
+                        data-role="{{ 'ROLE_ADMIN' in user.roles ? 'ADMIN' : 'USER' }}"
+                        data-wallet="{{ user.wallet ? 'with_wallet' : 'without_wallet' }}"
+                    >
+                        <td><span class="id-badge">#U{{ user.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <div class="owner-avatar">{{ user.fullName|slice(0, 1)|upper }}</div>
+                                <span>{{ user.fullName }}</span>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="status-badge {{ 'ROLE_ADMIN' in user.roles ? 'deposit' : 'info' }}">
+                                {{ 'ROLE_ADMIN' in user.roles ? 'ADMIN' : 'USER' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.wallet %}
+                                <strong>#W{{ user.wallet.id }}</strong> - {{ user.wallet.owner }}
+                            {% else %}
+                                <span style="color: var(--text-muted);">No wallet assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.createdAt|date('M d, Y H:i') }}</td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            <button
+                                type="button"
+                                class="btn-icon edit"
+                                title="Edit"
+                                data-id="{{ user.id }}"
+                                data-full-name="{{ user.fullName }}"
+                                data-email="{{ user.email }}"
+                                data-role="{{ 'ROLE_ADMIN' in user.roles ? 'ROLE_ADMIN' : 'ROLE_USER' }}"
+                                data-wallet-id="{{ user.wallet ? user.wallet.id : '' }}"
+                                onclick="openEditUserModal(this)"
+                            >
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form action="{{ path('user_delete', {'id': user.id}) }}" method="POST" onsubmit="return confirm('Delete this user?')">
+                                <button type="submit" class="btn-icon delete" title="Delete" {% if user.id == app.session.get('user_id') %}disabled{% endif %}>
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-users-slash"></i>
+                                <p>No users found. Create one now.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# CREATE USER MODAL: submits the admin create form to route user_create #}
+<div id="addUserModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add User</h2>
+            <span class="close-btn" onclick="document.getElementById('addUserModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('user_create') }}" method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="full_name" placeholder="Enter full name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" name="email" placeholder="user@nexora.tn">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Enter secure password">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user-tag"></i>
+                    <select name="role">
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Wallet</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-wallet"></i>
+                    <select name="wallet_id">
+                        <option value="">No wallet assigned</option>
+                        {% for wallet in wallets %}
+                            {% if wallet.user is null %}
+                                <option value="{{ wallet.id }}">#W{{ wallet.id }} - {{ wallet.owner }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create User</button>
+        </form>
+    </div>
+</div>
+
+{# EDIT USER MODAL: form action is filled dynamically in JavaScript with /users/update/{id} #}
+<div id="editUserModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit User</h2>
+            <span class="close-btn" onclick="document.getElementById('editUserModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editUserForm" method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="full_name" id="editUserFullName">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" name="email" id="editUserEmail">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>New Password</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-key"></i>
+                    <input type="password" name="password" id="editUserPassword" placeholder="Leave blank to keep current password">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user-tag"></i>
+                    <select name="role" id="editUserRole">
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Wallet</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-wallet"></i>
+                    <select name="wallet_id" id="editUserWallet">
+                        <option value="">No wallet assigned</option>
+                        {% for wallet in wallets %}
+                            <option
+                                value="{{ wallet.id }}"
+                                data-linked-user="{{ wallet.user ? wallet.user.id : '' }}"
+                            >
+                                #W{{ wallet.id }} - {{ wallet.owner }}{% if wallet.user %} (Assigned){% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    // USER SEARCH + FILTER: reads the search input and dropdown filters, then hides/shows user rows.
+    function filterUsers() {
+        const searchQuery = document.getElementById('userSearch').value.toLowerCase();
+        const roleFilter = document.getElementById('userRoleFilter').value;
+        const walletFilter = document.getElementById('userWalletFilter').value;
+        const rows = document.querySelectorAll('.user-row');
+
+        rows.forEach(row => {
+            const searchText = row.getAttribute('data-search');
+            const role = row.getAttribute('data-role');
+            const wallet = row.getAttribute('data-wallet');
+
+            const matchesSearch = searchText.includes(searchQuery);
+            const matchesRole = roleFilter === 'all' || role === roleFilter;
+            const matchesWallet = walletFilter === 'all' || wallet === walletFilter;
+
+            row.style.display = matchesSearch && matchesRole && matchesWallet ? '' : 'none';
+        });
+    }
+
+    // EDIT USER MODAL SETUP: copies the clicked row data into the form and targets /users/update/{id}.
+    function openEditUserModal(button) {
+        const userId = button.dataset.id;
+        const walletId = button.dataset.walletId;
+        const walletSelect = document.getElementById('editUserWallet');
+
+        document.getElementById('editUserForm').action = "{{ path('user_index') }}/update/" + userId;
+        document.getElementById('editUserFullName').value = button.dataset.fullName;
+        document.getElementById('editUserEmail').value = button.dataset.email;
+        document.getElementById('editUserPassword').value = '';
+        document.getElementById('editUserRole').value = button.dataset.role;
+
+        Array.from(walletSelect.options).forEach(option => {
+            if (option.value === '') {
+                option.hidden = false;
+                return;
+            }
+
+            const linkedUserId = option.dataset.linkedUser;
+            option.hidden = linkedUserId !== '' && linkedUserId !== userId;
+        });
+
+        walletSelect.value = walletId || '';
+        document.getElementById('editUserModal').style.display = 'block';
+    }
+
+    // MODAL CLOSE HANDLER: closes create/edit modals when clicking outside the modal content.
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

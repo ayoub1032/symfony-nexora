@@ -1,0 +1,304 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Wallet Goals - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'Global Trading Watchlist' : 'My Trading Goals' }}
+        </h1>
+        <button class="btn btn-primary" onclick="document.getElementById('addGoalModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Goal
+        </button>
+    </div>
+
+    {# ── Stats Row ── #}
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-bullseye"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Goals</span>
+                <span class="stat-value">{{ goals|length }}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Achieved</span>
+                <span class="stat-value text-success">
+                    {{ goals|filter(g => g.status == 'achieved')|length }}
+                </span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">In Progress</span>
+                <span class="stat-value">
+                    {{ goals|filter(g => g.status == 'in_progress')|length }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {# ── Goals Table ── #}
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>All Goals</h3>
+            <div class="d-flex gap-3 align-items-center">
+                {# Search Input #}
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 250px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="goalSearch" placeholder="Search by name..." onkeyup="filterGoals()">
+                </div>
+                {# Status Filter #}
+                <div class="input-with-icon" style="margin-bottom: 0; min-width: 180px;">
+                    <i class="fas fa-filter"></i>
+                    <select id="statusFilter" onchange="filterGoals()">
+                        <option value="all">All Status</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="achieved">Achieved</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Wallet (Owner)</th>
+                        <th>Goal Name</th>
+                        <th>Target (π)</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for goal in goals %}
+                    <tr class="goal-row" data-name="{{ goal.name|lower }}" data-status="{{ goal.status }}">
+                        <td><span class="id-badge">#G{{ goal.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <div class="owner-avatar">{{ goal.wallet.owner|slice(0,1)|upper }}</div>
+                                <span>{{ goal.wallet.owner }} <small style="opacity:.5">#W{{ goal.wallet.id }}</small></span>
+                            </div>
+                        </td>
+                        <td><strong>{{ goal.name }}</strong></td>
+                        <td style="min-width: 160px; vertical-align: middle;">
+                            <div style="margin-bottom: 4px;">
+                            <span class="price-text">{{ goal.targetAmount|number_format(2) }} DT</span>
+                            </div>
+                            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px; font-weight: 600; letter-spacing: 0.5px;">
+                                {{ goal.getProgression() }}% COMPLETED
+                            </div>
+                            {# Barre de progression forcée en inline #}
+                            <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+                                <div style="width: {{ goal.getProgression() }}%; height: 100%; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981); border-radius: 10px; transition: width 0.5s ease;"></div>
+                            </div>
+                        </td>
+                        <td>
+                            {{ goal.deadline|date('M d, Y') }}
+                            {% if goal.isUrgent() %}
+                                <br><span class="status-badge urgent" style="margin-top:5px; font-size:10px;">
+                                    <i class="fas fa-exclamation-triangle"></i> URGENT
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if goal.status == 'achieved' %}
+                                <span class="status-badge deposit"><i class="fas fa-check"></i> Achieved</span>
+                            {% elseif goal.status == 'cancelled' %}
+                                <span class="status-badge withdrawal"><i class="fas fa-times"></i> Cancelled</span>
+                            {% else %}
+                                <span class="status-badge" style="background:rgba(99,102,241,.15);color:#6366f1;">
+                                    <i class="fas fa-spinner fa-spin"></i> In Progress
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditGoalModal(
+                                    {{ goal.id }},
+                                    '{{ goal.name|e('js') }}',
+                                    '{{ goal.targetAmount }}',
+                                    '{{ goal.deadline|date('Y-m-d') }}',
+                                    '{{ goal.status }}'
+                                )">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            {# Cancel Button #}
+                            {% if goal.status != 'cancelled' and goal.status != 'achieved' %}
+                            <form action="{{ path('wallet_goal_cancel', {'id': goal.id}) }}" method="POST"
+                                  onsubmit="return confirm('Are you sure you want to CANCEL this goal?')">
+                                <button type="submit" class="btn-icon" style="background: rgba(245,158,11,.1); color:#f59e0b;" title="Cancel Goal">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <form action="{{ path('wallet_goal_delete', {'id': goal.id}) }}" method="POST"
+                                  onsubmit="return confirm('Delete this goal?')">
+                                <button type="submit" class="btn-icon delete" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-bullseye"></i>
+                                <p>No goals yet. Set your first trading goal!</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Goal Modal ── #}
+<div id="addGoalModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2><i class="fas fa-bullseye mr-2"></i> New Trading Goal</h2>
+            <span class="close-btn" onclick="document.getElementById('addGoalModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('wallet_goal_create') }}" method="POST">
+            <div class="form-group" {% if app.session.get('role') == 'USER' %}style="display:none;"{% endif %}>
+                <label>Wallet</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-wallet"></i>
+                    <select name="wallet_id">
+                        {% if app.session.get('role') == 'USER' %}
+                             <option value="{{ app.session.get('logged_in_wallet_id') }}" selected>My Wallet</option>
+                        {% else %}
+                            <option value="">Select a wallet...</option>
+                            {% for wallet in wallets %}
+                            <option value="{{ wallet.id }}">{{ wallet.owner }} — {{ wallet.balance|number_format(2) }} DT (#W{{ wallet.id }})</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Goal Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" name="name" placeholder="e.g. Save for BTC investment">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Amount (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="target_amount" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Deadline</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                    <input type="text" name="deadline" id="addGoalDeadline" placeholder="YYYY-MM-DD">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Goal</button>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Goal Modal ── #}
+<div id="editGoalModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit mr-2"></i> Edit Goal</h2>
+            <span class="close-btn" onclick="document.getElementById('editGoalModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editGoalForm" method="POST">
+            <div class="form-group">
+                <label>Goal Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-tag"></i>
+                    <input type="text" name="name" id="editGoalName">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Amount (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="target_amount" id="editGoalTarget">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Deadline</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                    <input type="text" name="deadline" id="editGoalDeadline" placeholder="YYYY-MM-DD">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-flag"></i>
+                    <select name="status" id="editGoalStatus">
+                        <option value="in_progress">In Progress</option>
+                        <option value="achieved">Achieved</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    function filterGoals() {
+        const searchQuery = document.getElementById('goalSearch').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('.goal-row');
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const status = row.getAttribute('data-status');
+            
+            const matchesSearch = name.includes(searchQuery);
+            const matchesStatus = (statusFilter === 'all' || status === statusFilter);
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function openEditGoalModal(id, name, target, deadline, status) {
+        document.getElementById('editGoalForm').action = '/wallet-goals/update/' + id;
+        document.getElementById('editGoalName').value    = name;
+        document.getElementById('editGoalTarget').value  = target;
+        document.getElementById('editGoalDeadline').value = deadline;
+        document.getElementById('editGoalStatus').value  = status;
+        document.getElementById('editGoalModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

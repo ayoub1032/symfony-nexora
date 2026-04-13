@@ -1,0 +1,231 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Orders - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'Manage Orders' : 'Market Orders' }}
+        </h1>
+        {% if app.session.get('role') == 'ADMIN' %}
+        <button class="btn btn-primary" onclick="document.getElementById('addOrderModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Order
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-shopping-cart"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Orders</span>
+                <span class="stat-value">{{ activeCount }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Registered Orders</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>User ID</th>
+                        <th>Asset Name</th>
+                        <th>Quantity</th>
+                        <th>Price (TND)</th>
+                        <th>Type</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr class="wallet-row">
+                        <td><span class="id-badge">#O{{ order.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <span>User #{{ order.userId }}</span>
+                            </div>
+                        </td>
+                        <td><strong>{{ order.asset.name }} ({{ order.asset.symbol }})</strong></td>
+                        <td>{{ order.quantity }}</td>
+                        <td>
+                            <span class="price-text text-success">
+                                {{ order.price|number_format(2) }} DT
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-badge {{ order.type|lower == 'buy' ? 'deposit' : 'withdrawal' }}">
+                                {{ order.type|upper }}
+                            </span>
+                        </td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditModal({{ order.id }}, '{{ order.userId }}', '{{ order.asset.id }}', '{{ order.quantity }}', '{{ order.price }}', '{{ order.type|escape('js') }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form action="{{ path('order_delete', {'id': order.id}) }}" method="POST" onsubmit="return confirm('Delete this order?')">
+                                <button type="submit" class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-shopping-cart"></i>
+                                <p>No orders found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Order Modal ── #}
+<div id="addOrderModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add New Order</h2>
+            <span class="close-btn" onclick="document.getElementById('addOrderModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('order_create') }}" method="POST">
+            <div class="form-group">
+                <label>User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="userId" placeholder="Enter target User ID">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Asset</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-gem"></i>
+                    <select name="asset_id">
+                        <option value="" disabled selected>Select an Asset...</option>
+                        {% for asset in assets %}
+                            <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-sort-amount-up"></i>
+                    <input type="text" name="quantity" placeholder="Quantity">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Price (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="price" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Order Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                    <select name="type">
+                        <option value="Buy">Buy</option>
+                        <option value="Sell">Sell</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Order Modal ── #}
+<div id="editOrderModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit Order</h2>
+            <span class="close-btn" onclick="document.getElementById('editOrderModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editOrderForm" method="POST">
+            <div class="form-group">
+                <label>User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="userId" id="editOrderUserId">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Asset</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-gem"></i>
+                    <select name="asset_id" id="editOrderAssetId">
+                        {% for asset in assets %}
+                            <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-sort-amount-up"></i>
+                    <input type="text" name="quantity" id="editOrderQuantity">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Price (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="price" id="editOrderPrice">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Order Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                    <select name="type" id="editOrderType">
+                        <option value="Buy">Buy</option>
+                        <option value="Sell">Sell</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, userId, assetId, quantity, price, type) {
+        document.getElementById('editOrderForm').action = "{{ path('order_index') }}/update/" + id;
+        document.getElementById('editOrderUserId').value = userId;
+        document.getElementById('editOrderAssetId').value = assetId;
+        document.getElementById('editOrderQuantity').value = quantity;
+        document.getElementById('editOrderPrice').value = parseFloat(price).toFixed(2);
+        
+        // Handle case sensitivity for type if needed (Buy vs buy)
+        const typeSelect = document.getElementById('editOrderType');
+        for(let i=0; i<typeSelect.options.length; i++) {
+            if(typeSelect.options[i].value.toLowerCase() === type.toLowerCase()) {
+                typeSelect.options[i].selected = true;
+                break;
+            }
+        }
+        
+        document.getElementById('editOrderModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

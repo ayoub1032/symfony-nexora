@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Wallets - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'System Management' : 'My Investments' }}
+        </h1>
+        {% if app.session.get('role') == 'ADMIN' %}
+        <button class="btn btn-primary" onclick="document.getElementById('addWalletModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Wallet
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-coins"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Balance (TND)</span>
+                <span class="stat-value text-success">{{ totalBalance|number_format(2) }} DT</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-wallet"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">{{ app.session.get('role') == 'ADMIN' ? 'Active Wallets' : 'My Portfolios' }}</span>
+                <span class="stat-value">{{ activeCount }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>Registered Wallets</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Owner</th>
+                        <th>Balance (TND / USDT / EUR)</th>
+                        <th>Created At</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wallet in wallets %}
+                    <tr class="wallet-row" data-owner="{{ wallet.owner|lower }}">
+                        <td><span class="id-badge">#W{{ wallet.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <div class="owner-avatar">{{ wallet.owner|slice(0, 1)|upper }}</div>
+                                <span>{{ wallet.owner }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="price-text {{ wallet.balance < 50 ? 'low-balance-alert' : '' }}">
+                                {{ wallet.balance|number_format(2) }} DT
+                            </span>
+                            {% if wallet.balance < 50 %}
+                                <span class="alert-badge"><i class="fas fa-exclamation-triangle"></i> LOW</span>
+                            {% endif %}
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                                <span style="color: #10b981;">≈ {{ wallet.getUsdtBalance()|number_format(2) }} USDT</span><br>
+                                <span style="color: #6366f1;">≈ {{ wallet.getEurBalance()|number_format(2) }} EUR</span>
+                            </div>
+                        </td>
+                        <td>{{ wallet.createdAt|date('M d, Y H:i') }}</td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            {# Transaction Button #}
+                            <button class="btn-icon tx" title="Transaction"
+                                onclick="openTxModal({{ wallet.id }}, '{{ wallet.owner }}', '{{ wallet.balance }}')">
+                                <i class="fas fa-exchange-alt"></i>
+                            </button>
+                            {# Edit Button #}
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditModal({{ wallet.id }}, '{{ wallet.owner }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {# Delete Button #}
+                            <form action="{{ path('wallet_delete', {'id': wallet.id}) }}" method="POST" onsubmit="return confirm('Delete this wallet?')">
+                                <button type="submit" class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <p>No wallets found. Create one now.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Wallet Modal ── #}
+<div id="addWalletModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add New Wallet</h2>
+            <span class="close-btn" onclick="document.getElementById('addWalletModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('wallet_create') }}" method="POST">
+            <div class="form-group">
+                <label>Owner Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="owner" placeholder="Enter full name">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Initial Balance (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="balance" value="0.00">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Initialize Wallet</button>
+        </form>
+    </div>
+</div>
+
+{# ── Edit Wallet Modal ── #}
+<div id="editWalletModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit Wallet</h2>
+            <span class="close-btn" onclick="document.getElementById('editWalletModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editWalletForm" method="POST">
+            <div class="form-group">
+                <label>Owner Name</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="owner" id="editOwner" placeholder="Enter full name">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+{# ── Transaction Modal ── #}
+<div id="txModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2><i class="fas fa-exchange-alt mr-2"></i> Transaction — <span id="txOwnerName"></span></h2>
+            <span class="close-btn" onclick="document.getElementById('txModal').style.display='none'">&times;</span>
+        </div>
+        <p style="color:var(--text-secondary); margin-bottom:1rem;">
+            Current balance: <strong id="txCurrentBalance" class="text-success"></strong> DT
+        </p>
+        <form id="txForm" method="POST">
+            <div class="form-group">
+                <label>Operation Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-tasks"></i>
+                    <select name="type">
+                        <option value="Deposit">Deposit (+)</option>
+                        <option value="Withdrawal">Withdrawal (−)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Amount (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <input type="text" name="amount" placeholder="0.00">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Confirm Transaction</button>
+        </form>
+    </div>
+</div>
+
+    {# ── Recent Activity Section (ADMIN ONLY) ── #}
+    {% if app.session.get('role') == 'ADMIN' %}
+    <div class="data-card" style="margin-top: 40px;">
+        <div class="card-header">
+            <h3><i class="fas fa-history mr-2"></i> Recent Activity</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Wallet</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recentLogs %}
+                    <tr>
+                        <td style="font-size: 13px; color: var(--text-muted);">{{ log.createdAt|date('d/m H:i') }}</td>
+                        <td><strong>{{ log.wallet.owner }}</strong></td>
+                        <td>{{ log.message }}</td>
+                        <td>
+                            <span class="status-badge {{ log.type == 'success' ? 'deposit' : (log.type == 'warning' ? 'withdrawal' : 'info') }}" style="font-size: 10px;">
+                                {{ log.type|upper }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">No activity recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<style>
+    .btn-icon.tx { background: rgba(245,158,11,.15); color:#f59e0b; }
+    .btn-icon.tx:hover { background: rgba(245,158,11,.3); }
+</style>
+<script>
+    function filterWallets() {
+        const query = document.getElementById('walletSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.wallet-row');
+        rows.forEach(row => {
+            const owner = row.getAttribute('data-owner');
+            row.style.display = owner.includes(query) ? '' : 'none';
+        });
+    }
+
+    function openEditModal(id, owner) {
+        document.getElementById('editWalletForm').action = "{{ path('wallet_index') }}/update/" + id;
+        document.getElementById('editOwner').value = owner;
+        document.getElementById('editWalletModal').style.display = 'block';
+    }
+
+    function openTxModal(id, owner, balance) {
+        document.getElementById('txForm').action = "{{ path('wallet_index') }}/transaction/" + id;
+        document.getElementById('txOwnerName').textContent = owner;
+        document.getElementById('txCurrentBalance').textContent = parseFloat(balance).toFixed(2);
+        document.getElementById('txModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

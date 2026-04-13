@@ -1,0 +1,482 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Executive View | Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid page-fade-in">
+<div class="dashboard-header mb-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2 font-weight-bold mb-1">Executive Overview</h1>
+            <p class="text-muted">Analyse en temps réel de votre activité financière et conseils par IA.</p>
+        </div>
+        <div class="date-badge glass-light p-2 px-3 rounded-pill border d-flex align-items-center">
+            <div class="currency-selector mr-3 pr-3 border-right border-secondary">
+                <button class="btn btn-sm btn-outline-light active btn-currency" data-currency="TND" data-rate="1">TND</button>
+                <button class="btn btn-sm btn-outline-light btn-currency" data-currency="USD" data-rate="{{ rates.USD }}">USD</button>
+                <button class="btn btn-sm btn-outline-light btn-currency" data-currency="EUR" data-rate="{{ rates.EUR }}">EUR</button>
+            </div>
+            <i class="far fa-calendar-alt mr-2"></i> {{ "now"|date("d M Y") }}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Stat Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="glass-card p-4 h-100 animate-fade-in stagger-1">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="text-muted mb-1 text-uppercase small font-weight-bold tracking-wider">Total Balance</p>
+                    <h2 class="mb-0 font-weight-bold"><span class="val-currency" data-base="{{ totalBalance }}">{{ totalBalance|number_format(2, '.', ',') }}</span> <span class="unit-currency">TND</span></h2>
+                </div>
+                <div class="icon-stat success-soft">
+                    <i class="fas fa-wallet"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="d-flex align-items-center">
+                    <span class="text-success font-weight-bold mr-2"><i class="fas fa-arrow-up mr-1"></i> +{{ "now"|date("j") }}%</span>
+                    <span class="text-muted small">vs last month</span>
+                </div>
+                <div class="progress mt-2" style="height: 4px; background: rgba(255,255,255,0.05);">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 70%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="glass-card p-4 h-100 animate-fade-in stagger-2" style="animation-delay: 0.1s">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <p class="text-muted mb-1 text-uppercase small font-weight-bold tracking-wider">Invested Capital</p>
+                    <h2 class="mb-0 font-weight-bold"><span class="val-currency" data-base="{{ investedCapital }}">{{ investedCapital|number_format(2, '.', ',') }}</span> <span class="unit-currency">TND</span></h2>
+                </div>
+                <div class="icon-stat primary-soft">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="d-flex align-items-center">
+                    <span class="text-primary font-weight-bold mr-2">Diversifié</span>
+                    <span class="text-muted small">4 Markets</span>
+                </div>
+                <div class="progress mt-2" style="height: 4px; background: rgba(255,255,255,0.05);">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 55%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI ADVISOR CARD -->
+    <div class="col-xl-6 mb-4">
+        <div class="glass-card p-4 h-100 border-glow-purple animate-fade-in stagger-3" style="animation-delay: 0.2s">
+            <div class="d-flex align-items-center mb-3">
+                <div class="ai-avatar-glow mr-3">
+                    <i class="fas fa-robot"></i>
+                    <span class="ai-pulse"></span>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 font-weight-bold">Assistant Nexora IA</h4>
+                        <div class="d-flex align-items-center">
+                            <div class="custom-dropdown mr-2" style="position: relative;">
+                                <button class="badge badge-purple-soft border-0 cursor-pointer" type="button" id="profileDropdownBtn">
+                                    Profil : <span id="current-profile">{{ wallet.user.riskProfile|default('Balanced') }}</span>
+                                    <i class="fas fa-chevron-down ml-1" style="font-size: 0.7rem;"></i>
+                                </button>
+                                <div id="profileDropdownMenu" class="custom-dropdown-menu glass shadow-lg">
+                                    <a class="dropdown-item update-profile" href="#" data-profile="Prudent">
+                                        <i class="fas fa-shield-halved mr-2 text-success"></i> Prudent
+                                    </a>
+                                    <a class="dropdown-item update-profile" href="#" data-profile="Balanced">
+                                        <i class="fas fa-scale-balanced mr-2 text-warning"></i> Équilibré
+                                    </a>
+                                    <a class="dropdown-item update-profile" href="#" data-profile="Dynamic">
+                                        <i class="fas fa-bolt mr-2 text-danger"></i> Dynamique
+                                    </a>
+                                </div>
+                            </div>
+                            <span class="badge badge-purple-soft d-flex align-items-center">
+                                <i class="fas fa-sparkles mr-1"></i> Gemini 2.0 Flash
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-speech-bubble-complex p-3 mb-3">
+                <div class="typing-container">
+                    <p class="mb-0" id="ai-response">
+                        "Votre répartition actuelle privilégie le Bitcoin (45%). Selon mes analyses, augmenter votre exposition à l'Ethereum de 5% pourrait optimiser votre ratio risque/rendement pour le trimestre à venir."
+                    </p>
+                </div>
+            </div>
+            <button class="btn btn-purple btn-glow btn-block py-2" id="ask-ai-btn">
+                <i class="fas fa-wand-magic-sparkles mr-2"></i> Demander une analyse IA complète
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Chart 1 (Pie) -->
+    <div class="col-lg-4 mb-4">
+        <div class="glass-card p-4 h-100 animate-fade-in" style="animation-delay: 0.3s">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="font-weight-bold mb-0">Assets Distribution</h5>
+                <a href="{{ path('app_dashboard_export') }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                    <i class="fas fa-file-pdf mr-1"></i> Exporter Rapport
+                </a>
+            </div>
+            <div style="height: 320px; position: relative;">
+                {{ render_chart(chart1) }}
+            </div>
+            <div class="analysis-callout">
+                <div class="executive-stat-badge">Nexora Analysis</div>
+                <p class="mb-0">Répartition actuelle basée sur vos transactions. {{ analysis.insight_text }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chart 2 (Line) -->
+    <div class="col-lg-8 mb-4">
+        <div class="glass-card p-4 h-100 animate-fade-in" style="animation-delay: 0.4s">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h5 class="font-weight-bold mb-0">Market Performance</h5>
+                    <p class="text-muted small mb-0">Évolution de la valeur de vos portefeuilles</p>
+                </div>
+                <div class="custom-tab-group">
+                    <button class="active btn-period" data-period="7D">7D</button>
+                    <button class="btn-period" data-period="1M">1M</button>
+                    <button class="btn-period" data-period="ALL">ALL</button>
+                </div>
+            </div>
+            <div style="height: 320px; position: relative;">
+                {{ render_chart(chart2) }}
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="glass-light p-3 rounded-lg border border-secondary">
+                        <small class="text-muted d-block text-uppercase">Health Score</small>
+                        <span class="h4 font-weight-bold" style="color:var(--accent);">{{ analysis.health_score }}%</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-light p-3 rounded-lg border border-secondary">
+                        <small class="text-muted d-block text-uppercase">Market Sentiment</small>
+                        <span class="text-success font-weight-bold"><i class="fas fa-trending-up mr-1"></i> Optimistic</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .custom-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 1000;
+        min-width: 160px;
+        padding: 0.5rem 0;
+        margin: 0.5rem 0 0;
+        text-align: left;
+        list-style: none;
+        background: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+    }
+    .custom-dropdown-menu.show {
+        display: block;
+    }
+    .custom-dropdown-menu .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 0.6rem 1.2rem;
+        clear: both;
+        font-weight: 400;
+        color: #f8fafc;
+        text-align: inherit;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+        text-decoration: none;
+        transition: 0.2s;
+        font-size: 0.9rem;
+    }
+    .custom-dropdown-menu .dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+    }
+
+    :root {
+        --purple-glow: rgba(168, 85, 247, 0.4);
+        --primary-glow: rgba(99, 102, 241, 0.4);
+    }
+
+    /* Layout & Cards */
+    .glass-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .glass-card:hover {
+        transform: translateY(-8px) scale(1.01);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    
+    .glass-light { background: rgba(255, 255, 255, 0.05); }
+
+    /* Icons & Badges */
+    .icon-stat {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+    }
+    .success-soft { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .primary-soft { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+    
+    .badge-purple-soft {
+        background: rgba(168, 85, 247, 0.15);
+        color: #d8b4fe;
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+
+    /* AI Specific Styles */
+    .border-glow-purple {
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.1);
+        border: 1px solid rgba(168, 85, 247, 0.3) !important;
+    }
+    .ai-avatar-glow {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: white;
+        position: relative;
+        box-shadow: 0 0 15px var(--purple-glow);
+    }
+    .ai-pulse {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        background: inherit;
+        filter: blur(5px);
+        z-index: -1;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.6; }
+        70% { transform: scale(1.3); opacity: 0; }
+        100% { transform: scale(1); opacity: 0; }
+    }
+    .ai-speech-bubble-complex {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 18px;
+        border-top-left-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 1.05rem;
+        line-height: 1.7;
+        color: #e2e8f0;
+    }
+    
+    .btn-purple {
+        background: linear-gradient(135deg, #6366f1, #a855f7);
+        border: none;
+        color: white;
+        font-weight: 600;
+        border-radius: 14px;
+        transition: all 0.3s;
+    }
+    .btn-glow { box-shadow: 0 4px 15px var(--purple-glow); }
+    .btn-purple:hover {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px var(--purple-glow);
+        color: white;
+    }
+
+    /* Tabs */
+    .custom-tab-group {
+        background: rgba(0,0,0,0.2);
+        padding: 4px;
+        border-radius: 12px;
+        display: flex;
+    }
+    .custom-tab-group button {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        padding: 5px 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 9px;
+        transition: all 0.2s;
+    }
+    .custom-tab-group button.active {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        opacity: 0;
+    }
+    
+    .tracking-wider { letter-spacing: 0.05em; }
+    .cursor-pointer { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.getElementById('ask-ai-btn').addEventListener('click', function() {
+        const btn = this;
+        const responseBox = document.getElementById('ai-response');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Analyse des marchés via Gemini...';
+        responseBox.style.opacity = '0.4';
+        
+        fetch("{{ path('app_dashboard_analyze') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.advice) {
+                responseBox.innerHTML = '"' + data.advice + '"';
+            } else if (data.error) {
+                responseBox.innerHTML = '"Erreur : ' + data.error + '"';
+            }
+            responseBox.style.opacity = '1';
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-2"></i> Recalculer l\'analyse';
+            btn.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            responseBox.innerHTML = '"Une erreur est survenue lors de la communication avec l\'IA."';
+            responseBox.style.opacity = '1';
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles mr-2"></i> Réessayer';
+            btn.disabled = false;
+        });
+    });
+
+    // --- Performance Chart Update Logic ---
+    document.querySelectorAll('.btn-period').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // UI Update
+            document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const period = this.getAttribute('data-period');
+            const url = "{{ path('app_dashboard_performance') }}?period=" + period;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Get Chart.js instance from Stimulus
+                    const chartElement = document.querySelector('[data-controller="symfony--ux-chartjs--chart"]');
+                    if (chartElement) {
+                        const chart = Chart.getChart(chartElement);
+                        if (chart) {
+                            chart.data.labels = data.labels;
+                            chart.data.datasets[0].data = data.data;
+                            chart.update();
+                        }
+                    }
+                });
+        });
+    });
+
+    // --- Currency Switcher Logic ---
+    document.querySelectorAll('.btn-currency').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.btn-currency').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const rate = parseFloat(this.getAttribute('data-rate'));
+            const currency = this.getAttribute('data-currency');
+
+            document.querySelectorAll('.val-currency').forEach(el => {
+                const baseValue = parseFloat(el.getAttribute('data-base'));
+                const converted = baseValue * rate;
+                el.innerText = converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            });
+
+            document.querySelectorAll('.unit-currency').forEach(el => {
+                el.innerText = currency;
+            });
+        });
+    });
+
+    // --- Risk Profile Dropdown Toggle ---
+    const profileBtn = document.getElementById('profileDropdownBtn');
+    const profileMenu = document.getElementById('profileDropdownMenu');
+
+    if (profileBtn && profileMenu) {
+        profileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            profileMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', function() {
+            profileMenu.classList.remove('show');
+        });
+    }
+
+    document.querySelectorAll('.update-profile').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const profile = this.getAttribute('data-profile');
+            const formData = new FormData();
+            formData.append('profile', profile);
+
+            fetch("{{ path('app_dashboard_profile_update') }}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('current-profile').innerText = data.profile;
+                    profileMenu.classList.remove('show');
+                    // Auto-trigger AI refresh with new profile
+                    document.getElementById('ask-ai-btn').click();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+</script>
+{% endblock %}

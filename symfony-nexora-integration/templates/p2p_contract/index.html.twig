@@ -1,0 +1,253 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}P2P Contracts - Nexora{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-heading">
+            {{ app.session.get('role') == 'ADMIN' ? 'Manage P2P Contracts' : 'P2P Market' }}
+        </h1>
+        {% if app.session.get('role') == 'ADMIN' %}
+        <button class="btn btn-primary" onclick="document.getElementById('addContractModal').style.display='block'">
+            <i class="fas fa-plus"></i> New Contract
+        </button>
+        {% endif %}
+    </div>
+
+    <div class="stats-row mb-4">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-handshake"></i></div>
+            <div class="stat-info">
+                <span class="stat-label">Total Contracts</span>
+                <span class="stat-value">{{ activeCount }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3>P2P Contracts</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Creator ID</th>
+                        <th>Asset Name</th>
+                        <th>Quantity & Price</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contract in contracts %}
+                    <tr class="wallet-row">
+                        <td><span class="id-badge">#C{{ contract.id }}</span></td>
+                        <td>
+                            <div class="owner-cell">
+                                <span>User #{{ contract.creatorId }}</span>
+                            </div>
+                        </td>
+                        <td><strong>{{ contract.asset.name }} ({{ contract.asset.symbol }})</strong></td>
+                        <td>
+                            {{ contract.quantity }} units @ <span class="price-text text-success">{{ contract.pricePerUnit|number_format(2) }} DT</span>
+                        </td>
+                        <td>
+                            <span class="status-badge {{ contract.contractType|lower == 'buy' ? 'deposit' : 'withdrawal' }}">
+                                {{ contract.contractType|upper }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {{ contract.status == 'OPEN' ? 'bg-primary' : (contract.status == 'COMPLETED' ? 'bg-success' : 'bg-secondary') }}">
+                                {{ contract.status }}
+                            </span>
+                        </td>
+                        <td class="text-right d-flex justify-content-end gap-2">
+                            {% if app.session.get('role') == 'ADMIN' %}
+                            <button class="btn-icon edit" title="Edit"
+                                onclick="openEditModal({{ contract.id }}, '{{ contract.creatorId }}', '{{ contract.asset.id }}', '{{ contract.quantity }}', '{{ contract.pricePerUnit }}', '{{ contract.contractType|escape('js') }}', '{{ contract.status|escape('js') }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <form action="{{ path('p2p_contract_delete', {'id': contract.id}) }}" method="POST" onsubmit="return confirm('Delete this contract?')">
+                                <button type="submit" class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-handshake"></i>
+                                <p>No P2P contracts found.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Contract Modal ── #}
+<div id="addContractModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Add New Contract</h2>
+            <span class="close-btn" onclick="document.getElementById('addContractModal').style.display='none'">&times;</span>
+        </div>
+        <form action="{{ path('p2p_contract_create') }}" method="POST">
+            <div class="form-group">
+                <label>Creator User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="creatorId" placeholder="Enter target User ID">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Asset</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-gem"></i>
+                    <select name="asset_id">
+                        <option value="" disabled selected>Select an Asset...</option>
+                        {% for asset in assets %}
+                            <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }}) - {{ asset.value|number_format(2) }} DT</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-sort-amount-up"></i>
+                    <input type="text" name="quantity" placeholder="Quantity">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Price Per Unit (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="pricePerUnit" placeholder="0.00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Contract Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                    <select name="contractType">
+                        <option value="BUY">Buy</option>
+                        <option value="SELL">Sell</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Publish Contract</button>
+        </form>
+    </div>
+</div>
+
+
+{# ── Edit Contract Modal ── #}
+<div id="editContractModal" class="custom-modal">
+    <div class="modal-content glass">
+        <div class="modal-header">
+            <h2>Edit Contract</h2>
+            <span class="close-btn" onclick="document.getElementById('editContractModal').style.display='none'">&times;</span>
+        </div>
+        <form id="editContractForm" method="POST">
+            <div class="form-group">
+                <label>Creator User ID</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="creatorId" id="editContractCreatorId">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Target Asset</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-gem"></i>
+                    <select name="asset_id" id="editContractAssetId">
+                        {% for asset in assets %}
+                            <option value="{{ asset.id }}">{{ asset.name }} ({{ asset.symbol }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-sort-amount-up"></i>
+                    <input type="text" name="quantity" id="editContractQuantity">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Price Per Unit (TND)</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-coins"></i>
+                    <input type="text" name="pricePerUnit" id="editContractPrice">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Contract Type</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-exchange-alt"></i>
+                    <select name="contractType" id="editContractType">
+                        <option value="BUY">Buy</option>
+                        <option value="SELL">Sell</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-info-circle"></i>
+                    <select name="status" id="editContractStatus">
+                        <option value="OPEN">OPEN</option>
+                        <option value="ACCEPTED">ACCEPTED</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, creatorId, assetId, quantity, price, type, status) {
+        document.getElementById('editContractForm').action = "{{ path('p2p_contract_index') }}/update/" + id;
+        document.getElementById('editContractCreatorId').value = creatorId;
+        document.getElementById('editContractAssetId').value = assetId;
+        document.getElementById('editContractQuantity').value = quantity;
+        document.getElementById('editContractPrice').value = parseFloat(price).toFixed(2);
+        
+        const typeSelect = document.getElementById('editContractType');
+        for(let i=0; i<typeSelect.options.length; i++) {
+            if(typeSelect.options[i].value.toUpperCase() === type.toUpperCase()) {
+                typeSelect.options[i].selected = true;
+                break;
+            }
+        }
+
+        const statusSelect = document.getElementById('editContractStatus');
+        for(let i=0; i<statusSelect.options.length; i++) {
+            if(statusSelect.options[i].value.toUpperCase() === status.toUpperCase()) {
+                statusSelect.options[i].selected = true;
+                break;
+            }
+        }
+        
+        document.getElementById('editContractModal').style.display = 'block';
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'custom-modal') {
+            event.target.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

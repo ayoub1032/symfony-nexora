@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexora Wallet - Choose Your Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        body {
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .gateway-container {
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            padding: 2rem;
+            animation: fadeIn 1s ease-out;
+        }
+        .gateway-title {
+            font-size: 3rem;
+            font-weight: 600;
+            margin-bottom: 3rem;
+            background: linear-gradient(90deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .portal-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        .portal-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        .portal-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #6366f1;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+        .portal-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.4s ease;
+        }
+        .portal-card:hover .portal-icon { transform: scale(1.1); }
+        .portal-name {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+        .portal-desc {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+        .icon-blue { color: #6366f1; }
+        .icon-purple { color: #a855f7; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Wallet Picker Styles */
+        .wallet-picker {
+            display: none;
+            margin-top: 3rem;
+            animation: slideUp 0.5s ease-out;
+        }
+        .wallet-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+        }
+        .wallet-item {
+            background: rgba(255,255,255,0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .wallet-item:hover {
+            background: #6366f1;
+            transform: scale(1.05);
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 1.5rem;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="gateway-container">
+        <div id="main-choices">
+            <h1 class="gateway-title">Welcome to Nexora Wallet</h1>
+            <div class="portal-options">
+                <a href="javascript:void(0)" onclick="showWalletPicker()" class="portal-card">
+                    <div class="portal-icon icon-blue"><i class="fas fa-user-tie"></i></div>
+                    <div class="portal-name">User Portal</div>
+                    <div class="portal-desc">Manage your investments & goals</div>
+                </a>
+                <a href="{{ path('app_choose_role', {'role': 'admin'}) }}" class="portal-card">
+                    <div class="portal-icon icon-purple"><i class="fas fa-user-shield"></i></div>
+                    <div class="portal-name">Admin Portal</div>
+                    <div class="portal-desc">Full system control & audit logs</div>
+                </a>
+            </div>
+        </div>
+
+        <div id="wallet-picker" class="wallet-picker">
+            <h1 class="gateway-title" style="font-size: 2rem;">Select Your Portfolio</h1>
+            <div class="wallet-list">
+                {% for wallet in wallets %}
+                <a href="{{ path('app_choose_role', {'role': 'user', 'wallet_id': wallet.id}) }}" class="wallet-item">
+                    <div style="font-weight: 600;">{{ wallet.owner }}</div>
+                    <div style="font-size: 0.8rem; opacity: 0.7;">Balance: {{ wallet.balance }} DT</div>
+                </a>
+                {% endfor %}
+            </div>
+            <a href="javascript:void(0)" onclick="hideWalletPicker()" class="back-btn"><i class="fas fa-arrow-left mr-2"></i> Back to main menu</a>
+        </div>
+    </div>
+
+    <script>
+        function showWalletPicker() {
+            document.getElementById('main-choices').style.display = 'none';
+            document.getElementById('wallet-picker').style.display = 'block';
+        }
+        function hideWalletPicker() {
+            document.getElementById('main-choices').style.display = 'block';
+            document.getElementById('wallet-picker').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
