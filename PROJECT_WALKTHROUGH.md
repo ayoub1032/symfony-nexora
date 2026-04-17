@@ -29,6 +29,7 @@ The work in this repository was done in phases:
 4. move input validation rules from browser-side HTML constraints to PHP-side validation
 5. add self-registration for normal users
 6. add dedicated search and filtering on the user management screen
+7. add forgot-password with email PIN verification and Brevo SMTP delivery
 
 ## 2. Workshop Context From `out_project`
 
@@ -483,7 +484,157 @@ UI behavior:
 - `/register` includes a link back to `/login`
 - the registration page visually matches the auth UI already used for login
 
-## 10. Technical Constraint Discussion For The User Module
+## 10. Phase 5: Forgot Password With Email PIN
+
+Later, the user asked to add a forgot-password flow from the login page:
+
+- user clicks `Forgot password?`
+- app sends a 6-digit PIN by email
+- user enters the PIN
+- user chooses a new password
+- user logs in again with that new password
+
+This was implemented as a controller/session-driven password reset flow consistent with the existing login architecture.
+
+### 10.1 Persistence For Reset PIN
+
+Updated:
+
+- [src/Entity/User.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/User.php)
+
+Added fields:
+
+- `resetPinCode`
+- `resetPinExpiresAt`
+- `resetPinRequestedAt`
+
+Added helper:
+
+- `clearResetPin()`
+
+Migration used:
+
+- [migrations/Version20260414110000.php](C:/Users/scyzo/OneDrive/Desktop/integration/migrations/Version20260414110000.php)
+
+This migration adds the reset-PIN columns on `users`.
+
+### 10.2 Forgot Password Routes And Logic
+
+Updated:
+
+- [src/Controller/HomeController.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Controller/HomeController.php)
+
+Added routes:
+
+- `GET|POST /forgot-password`
+- `GET|POST /verify-reset-pin`
+- `GET|POST /reset-password`
+
+Behavior:
+
+- forgot-password validates the submitted email in PHP
+- if the account exists, a 6-digit PIN is generated
+- the PIN is hashed before storage
+- the PIN expires after 15 minutes
+- repeated requests are rate-limited to roughly one per minute per user
+- if the email exists, the app sends the PIN by email and redirects to PIN verification
+- if the PIN is valid, the session stores a short-lived reset authorization
+- the reset-password screen then allows choosing a new password
+- after successful reset, the password is hashed and saved
+- the reset PIN data is cleared
+- the user is redirected back to `/login`
+
+Security design notes:
+
+- the app does not expose whether a submitted email exists in the database
+- the stored reset PIN is hashed, not stored in plain text
+- reset authorization is temporary and kept in the session
+
+### 10.3 Forgot Password UI
+
+Updated:
+
+- [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
+- [public/css/style.css](C:/Users/scyzo/OneDrive/Desktop/integration/public/css/style.css)
+
+Added:
+
+- [templates/security/forgot_password.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/forgot_password.html.twig)
+- [templates/security/verify_reset_pin.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/verify_reset_pin.html.twig)
+- [templates/security/reset_password.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/reset_password.html.twig)
+
+UI flow:
+
+- `/login` now includes `Forgot password?`
+- `/forgot-password` requests the email
+- `/verify-reset-pin` validates the code
+- `/reset-password` saves the new password
+
+### 10.4 Email Delivery Infrastructure
+
+The implementation initially passed through a Messenger async queue, but the final setup was changed to direct sending because the user wanted immediate delivery without running a worker manually.
+
+Final mail setup:
+
+- [config/packages/mailer.yaml](C:/Users/scyzo/OneDrive/Desktop/integration/config/packages/mailer.yaml)
+- [config/packages/messenger.yaml](C:/Users/scyzo/OneDrive/Desktop/integration/config/packages/messenger.yaml)
+- [config/services.yaml](C:/Users/scyzo/OneDrive/Desktop/integration/config/services.yaml)
+
+Final behavior:
+
+- `framework.mailer.message_bus` is disabled for mail sending
+- `Symfony\Component\Mailer\Messenger\SendEmailMessage` is no longer routed to `async`
+- forgot-password emails are sent immediately during the request
+
+### 10.5 Brevo SMTP Setup Chosen
+
+The user considered Outlook, Gmail, Mailtrap, and Brevo. The final choice for real delivery was `Brevo`.
+
+Practical reasons:
+
+- easier transactional-email setup than the school Outlook mailbox
+- real inbox delivery instead of sandbox-only testing
+- more suitable for the forgot-password use case than Mailtrap
+
+Local runtime configuration is expected in `.env.local` and currently includes:
+
+- `MAILER_DSN` pointing to `smtp-relay.brevo.com`
+- `MAILER_FROM_ADDRESS`
+- `MAILER_FROM_NAME`
+
+During the session, the sender address was aligned with the Brevo-verified sender already available in the account:
+
+- `mariemhaneshi@gmail.com`
+
+Display name used:
+
+- `Nexora Support`
+
+### 10.6 HTML Reset Email Template
+
+Added:
+
+- [templates/emails/reset_pin.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/emails/reset_pin.html.twig)
+
+The reset email was improved from a plain text PIN email to a branded HTML email with:
+
+- Nexora visual styling
+- clear headline and support identity
+- prominent 6-digit PIN block
+- expiration reminder
+- fallback plain text body still included in the message
+
+### 10.7 Sender Visibility Limitation
+
+One UX request was to avoid prominently showing the raw sender email.
+
+Practical conclusion:
+
+- the display name can show as `Nexora Support`
+- however, if the actual verified sender is `mariemhaneshi@gmail.com`, many mail clients still reveal that address in sender details
+- the only real long-term fix is to verify and use a better sender identity, ideally a custom domain sender such as `support@nexora.tn`
+
+## 11. Technical Constraint Discussion For The User Module
 
 At one point, the user asked whether the implemented `User` module respected teacher constraints such as:
 
@@ -514,7 +665,7 @@ Possible future fix if needed:
 
 - add `UserProfile`, `UserPreference`, `UserAddress`, or another clearly user-owned entity
 
-## 11. Recurrent Environment Issue: OneDrive Cache / Log Write Problems
+## 12. Recurrent Environment Issue: OneDrive Cache / Log Write Problems
 
 During testing, a repeated runtime problem appeared:
 
@@ -543,11 +694,11 @@ Important:
 
 The durable fix is to move the project outside OneDrive, for example to a normal local folder such as `C:\projects\integration`.
 
-## 12. What Was Verified During The Work
+## 13. What Was Verified During The Work
 
 Different things were verified at different phases.
 
-### 12.1 PHP Syntax
+### 13.1 PHP Syntax
 
 `php -l` was run successfully on many edited files including:
 
@@ -567,23 +718,31 @@ Different things were verified at different phases.
 - [src/Entity/Portfolio.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/Portfolio.php)
 - [src/Entity/UserReputation.php](C:/Users/scyzo/OneDrive/Desktop/integration/src/Entity/UserReputation.php)
 - [migrations/Version20260407110000.php](C:/Users/scyzo/OneDrive/Desktop/integration/migrations/Version20260407110000.php)
+- [migrations/Version20260414110000.php](C:/Users/scyzo/OneDrive/Desktop/integration/migrations/Version20260414110000.php)
 
-### 12.2 Twig Syntax
+### 13.2 Twig Syntax
 
 Twig syntax was also verified successfully for important edited templates, including:
 
 - [templates/security/login.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/login.html.twig)
 - [templates/security/register.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/register.html.twig)
 - [templates/user/index.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/user/index.html.twig)
+- [templates/security/forgot_password.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/forgot_password.html.twig)
+- [templates/security/verify_reset_pin.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/verify_reset_pin.html.twig)
+- [templates/security/reset_password.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/security/reset_password.html.twig)
+- [templates/emails/reset_pin.html.twig](C:/Users/scyzo/OneDrive/Desktop/integration/templates/emails/reset_pin.html.twig)
 
-### 12.3 Route Verification
+### 13.3 Route Verification
 
 Important route existence was verified, including:
 
 - `user_index` -> `/users`
 - `app_register` -> `/register`
+- `app_forgot_password` -> `/forgot-password`
+- `app_verify_reset_pin` -> `/verify-reset-pin`
+- `app_reset_password` -> `/reset-password`
 
-## 13. Current Functional State Of The User Module
+## 14. Current Functional State Of The User Module
 
 As of the latest changes, the `User` module supports:
 
@@ -591,6 +750,9 @@ As of the latest changes, the `User` module supports:
 - login via `/login`
 - logout via `/logout`
 - self-registration via `/register`
+- forgot-password via `/forgot-password`
+- PIN verification via `/verify-reset-pin`
+- password reset via `/reset-password`
 - automatic `ROLE_USER` for self-registration
 - automatic wallet creation for self-registered users
 - admin login without wallet
@@ -602,8 +764,9 @@ As of the latest changes, the `User` module supports:
 - dedicated user role filter
 - dedicated user wallet-state filter
 - shared table sorting through the global table script
+- branded HTML reset email through Brevo SMTP
 
-## 14. Current Architectural Limitation
+## 15. Current Architectural Limitation
 
 The app is still partially normalized.
 
@@ -620,9 +783,10 @@ So:
 - authentication <-> `User`: integrated
 - admin CRUD <-> `User`: integrated
 - registration <-> `User`: integrated
+- forgot-password <-> `User`: integrated
 - most domain modules <-> `User`: not yet fully normalized
 
-## 15. Recommended Next Refactor
+## 16. Recommended Next Refactor
 
 The next major technical step is still to replace raw user integer columns with real Doctrine relations.
 
@@ -644,7 +808,7 @@ Priority targets:
 
 If academic compliance requires two clearly user-owned entities, an additional dedicated user entity should also be added.
 
-## 16. Current Setup / Run Instructions
+## 17. Current Setup / Run Instructions
 
 From the project root:
 
@@ -672,6 +836,26 @@ or run the user migration directly if needed:
 php bin\console doctrine:migrations:execute DoctrineMigrations\\Version20260407110000 --up
 ```
 
+For the forgot-password flow, the reset migration may also be relevant if it is not already applied:
+
+```powershell
+php bin\console doctrine:migrations:execute DoctrineMigrations\\Version20260414110000 --up
+```
+
+2.1 configure Brevo mail locally in `.env.local`
+
+Expected keys:
+
+- `MAILER_DSN`
+- `MAILER_FROM_ADDRESS`
+- `MAILER_FROM_NAME`
+
+Current practical setup used during the session:
+
+- Brevo SMTP relay
+- verified sender: `mariemhaneshi@gmail.com`
+- display name: `Nexora Support`
+
 3. clear cache if OneDrive causes problems
 
 ```powershell
@@ -690,8 +874,9 @@ php -S 127.0.0.1:8000 -t public
 - login: `http://127.0.0.1:8000/login`
 - register: `http://127.0.0.1:8000/register`
 - admin user management: `http://127.0.0.1:8000/users`
+- forgot password: `http://127.0.0.1:8000/forgot-password`
 
-## 17. Things To Avoid In Future Work
+## 18. Things To Avoid In Future Work
 
 - Do not reintroduce the fake gateway as the main auth mechanism.
 - Do not create a second parallel user identity system.
@@ -699,8 +884,10 @@ php -S 127.0.0.1:8000 -t public
 - Do not assume Symfony security is fully modernized; it is still controller/session-driven.
 - Do not rely on browser-only HTML validation for core business input checks.
 - Do not forget the OneDrive cache/log write issue when diagnosing random runtime failures.
+- Do not switch forgot-password email delivery back to async Messenger unless a worker is also part of the documented run flow.
+- Do not expect the sender email address to be fully hidden while using a free mailbox sender; use a verified custom-domain sender if sender identity matters.
 
-## 18. How Future Chats Should Use This File
+## 19. How Future Chats Should Use This File
 
 If a future chat starts, the working assumptions should be:
 
@@ -713,6 +900,9 @@ If a future chat starts, the working assumptions should be:
 - admin user CRUD now exists
 - self-registration for normal users now exists
 - registration auto-creates a wallet
+- forgot-password with email PIN now exists
+- forgot-password emails are sent directly through Brevo SMTP
+- the current sender identity is still constrained by the Brevo-verified sender email in use
 - user-module search/filtering now exists on `/users`
 - major input validation was moved to PHP-side checks
 - the next core technical refactor is replacing remaining legacy integer user fields with real Doctrine relations

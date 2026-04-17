@@ -37,6 +37,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $resetPinCode = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $resetPinExpiresAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $resetPinRequestedAt = null;
+
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Wallet::class)]
     private ?Wallet $wallet = null;
 
@@ -135,6 +144,51 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->wallet = $wallet;
+
+        return $this;
+    }
+
+    public function getResetPinCode(): ?string
+    {
+        return $this->resetPinCode;
+    }
+
+    public function setResetPinCode(?string $resetPinCode): self
+    {
+        $this->resetPinCode = $resetPinCode;
+
+        return $this;
+    }
+
+    public function getResetPinExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->resetPinExpiresAt;
+    }
+
+    public function setResetPinExpiresAt(?\DateTimeImmutable $resetPinExpiresAt): self
+    {
+        $this->resetPinExpiresAt = $resetPinExpiresAt;
+
+        return $this;
+    }
+
+    public function getResetPinRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->resetPinRequestedAt;
+    }
+
+    public function setResetPinRequestedAt(?\DateTimeImmutable $resetPinRequestedAt): self
+    {
+        $this->resetPinRequestedAt = $resetPinRequestedAt;
+
+        return $this;
+    }
+
+    public function clearResetPin(): self
+    {
+        $this->resetPinCode = null;
+        $this->resetPinExpiresAt = null;
+        $this->resetPinRequestedAt = null;
 
         return $this;
     }

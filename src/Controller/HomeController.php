@@ -7,6 +7,10 @@ use App\Entity\Wallet;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -201,6 +205,231 @@ class HomeController extends AbstractController
         ]);
     }
 
+    #[Route('/forgot-password', name: 'app_forgot_password', methods: ['GET', 'POST'])]
+    public function forgotPassword(
+        Request $request,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager,
+        MailerInterface $mailer
+    ): Response {
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        $emailValue = trim((string) $request->query->get('email', ''));
+
+        if ($request->isMethod('POST')) {
+            $emailValue = strtolower(trim((string) $request->request->get('email')));
+
+            if ($emailValue === '' || !filter_var($emailValue, FILTER_VALIDATE_EMAIL)) {
+                $this->addFlash('danger', 'Please enter a valid email address.');
+
+                return $this->render('security/forgot_password.html.twig', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            $user = $userRepository->findOneByEmail($emailValue);
+
+            if ($user) {
+                $now = new \DateTimeImmutable();
+                $lastRequest = $user->getResetPinRequestedAt();
+
+                if ($lastRequest && $lastRequest > $now->modify('-1 minute')) {
+                    $this->addFlash('info', 'A reset code was already requested recently. Please wait one minute and try again.');
+
+                    return $this->redirectToRoute('app_verify_reset_pin', [
+                        'email' => $emailValue,
+                    ]);
+                }
+
+                $pin = $this->generateResetPin();
+                $user
+                    ->setResetPinCode(password_hash($pin, PASSWORD_DEFAULT))
+                    ->setResetPinRequestedAt($now)
+                    ->setResetPinExpiresAt($now->modify('+15 minutes'));
+
+                $entityManager->flush();
+
+                try {
+                    $mailer->send(
+                        (new Email())
+                            ->from(new Address(
+                                (string) $this->getParameter('app.mailer_from_address'),
+                                (string) $this->getParameter('app.mailer_from_name')
+                            ))
+                            ->to($user->getEmail() ?? $emailValue)
+                            ->subject('Nexora password reset PIN')
+                            ->text($this->buildResetPinEmailText($user, $pin))
+                            ->html($this->renderView('emails/reset_pin.html.twig', [
+                                'user' => $user,
+                                'pin' => $pin,
+                                'expires_in_minutes' => 15,
+                            ]))
+                    );
+                } catch (TransportExceptionInterface) {
+                    $this->addFlash('danger', 'The reset email could not be sent. Check your Brevo sender verification and SMTP settings.');
+
+                    return $this->render('security/forgot_password.html.twig', [
+                        'email' => $emailValue,
+                    ]);
+                }
+            }
+
+            $this->addFlash('info', 'If that email exists in Nexora, a 6-digit reset code has been sent.');
+
+            return $this->redirectToRoute('app_verify_reset_pin', [
+                'email' => $emailValue,
+            ]);
+        }
+
+        return $this->render('security/forgot_password.html.twig', [
+            'email' => $emailValue,
+        ]);
+    }
+
+    #[Route('/verify-reset-pin', name: 'app_verify_reset_pin', methods: ['GET', 'POST'])]
+    public function verifyResetPin(
+        Request $request,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        $emailValue = strtolower(trim((string) $request->query->get('email', '')));
+
+        if ($request->isMethod('POST')) {
+            $emailValue = strtolower(trim((string) $request->request->get('email')));
+            $pin = trim((string) $request->request->get('pin'));
+
+            if ($emailValue === '' || !filter_var($emailValue, FILTER_VALIDATE_EMAIL)) {
+                $this->addFlash('danger', 'Please enter a valid email address.');
+
+                return $this->render('security/verify_reset_pin.html.twig', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            if (!preg_match('/^\d{6}$/', $pin)) {
+                $this->addFlash('danger', 'The reset PIN must contain exactly 6 digits.');
+
+                return $this->render('security/verify_reset_pin.html.twig', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            $user = $userRepository->findOneByEmail($emailValue);
+            if (!$user || !$user->getResetPinCode() || !$user->getResetPinExpiresAt()) {
+                $this->addFlash('danger', 'Invalid or expired reset code.');
+
+                return $this->render('security/verify_reset_pin.html.twig', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            if ($user->getResetPinExpiresAt() < new \DateTimeImmutable()) {
+                $user->clearResetPin();
+                $entityManager->flush();
+                $this->addFlash('danger', 'This reset code has expired. Request a new one.');
+
+                return $this->redirectToRoute('app_forgot_password', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            if (!password_verify($pin, $user->getResetPinCode())) {
+                $this->addFlash('danger', 'Invalid or expired reset code.');
+
+                return $this->render('security/verify_reset_pin.html.twig', [
+                    'email' => $emailValue,
+                ]);
+            }
+
+            $session = $request->getSession();
+            $session->set('reset_password_user_id', $user->getId());
+            $session->set('reset_password_verified_until', time() + 900);
+
+            $this->addFlash('info', 'PIN verified. You can now choose a new password.');
+
+            return $this->redirectToRoute('app_reset_password');
+        }
+
+        return $this->render('security/verify_reset_pin.html.twig', [
+            'email' => $emailValue,
+        ]);
+    }
+
+    #[Route('/reset-password', name: 'app_reset_password', methods: ['GET', 'POST'])]
+    public function resetPassword(
+        Request $request,
+        UserRepository $userRepository,
+        EntityManagerInterface $entityManager,
+        UserPasswordHasherInterface $passwordHasher
+    ): Response {
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        $session = $request->getSession();
+        $resetUserId = (int) $session->get('reset_password_user_id');
+        $verifiedUntil = (int) $session->get('reset_password_verified_until');
+
+        if ($resetUserId <= 0 || $verifiedUntil < time()) {
+            $session->remove('reset_password_user_id');
+            $session->remove('reset_password_verified_until');
+            $this->addFlash('danger', 'Your password reset session has expired. Please request a new PIN.');
+
+            return $this->redirectToRoute('app_forgot_password');
+        }
+
+        $user = $userRepository->find($resetUserId);
+        if (!$user) {
+            $session->remove('reset_password_user_id');
+            $session->remove('reset_password_verified_until');
+            $this->addFlash('danger', 'The selected account no longer exists.');
+
+            return $this->redirectToRoute('app_forgot_password');
+        }
+
+        if ($request->isMethod('POST')) {
+            $password = (string) $request->request->get('password');
+            $confirmPassword = (string) $request->request->get('confirm_password');
+
+            if (mb_strlen($password) < 6) {
+                $this->addFlash('danger', 'Password must be at least 6 characters.');
+
+                return $this->render('security/reset_password.html.twig', [
+                    'email' => $user->getEmail(),
+                ]);
+            }
+
+            if ($password !== $confirmPassword) {
+                $this->addFlash('danger', 'Password confirmation does not match.');
+
+                return $this->render('security/reset_password.html.twig', [
+                    'email' => $user->getEmail(),
+                ]);
+            }
+
+            $user->setPassword($passwordHasher->hashPassword($user, $password));
+            $user->clearResetPin();
+            $entityManager->flush();
+
+            $session->remove('reset_password_user_id');
+            $session->remove('reset_password_verified_until');
+
+            $this->addFlash('success', 'Password updated successfully. You can log in now.');
+
+            return $this->redirectToRoute('app_login');
+        }
+
+        return $this->render('security/reset_password.html.twig', [
+            'email' => $user->getEmail(),
+        ]);
+    }
+
     #[Route('/logout', name: 'app_logout')]
     public function logout(Request $request): Response
     {
@@ -208,5 +437,19 @@ class HomeController extends AbstractController
         $this->addFlash('info', 'You have been logged out successfully.');
 
         return $this->redirectToRoute('app_login');
+    }
+
+    private function generateResetPin(): string
+    {
+        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    private function buildResetPinEmailText(User $user, string $pin): string
+    {
+        return sprintf(
+            "Hello %s,\n\nYour Nexora password reset PIN is: %s\n\nThis code expires in 15 minutes.\nIf you did not request it, you can ignore this email.",
+            $user->getFullName() ?? 'User',
+            $pin
+        );
     }
 }
