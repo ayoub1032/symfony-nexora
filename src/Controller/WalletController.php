@@ -13,6 +13,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mime\Address;
 
 class WalletController extends AbstractController
 {
@@ -128,7 +131,7 @@ class WalletController extends AbstractController
     }
 
     #[Route('/wallets/transaction/{id}', name: 'wallet_transaction', methods: ['POST'])]
-    public function transaction(Wallet $wallet, Request $request, EntityManagerInterface $entityManager): Response
+    public function transaction(Wallet $wallet, Request $request, EntityManagerInterface $entityManager, MailerInterface $mailer): Response
     {
         $type   = $request->request->get('type');
         $amount = (float)$request->request->get('amount');
@@ -156,11 +159,13 @@ class WalletController extends AbstractController
             $message = sprintf('Deposit of %.2f TND added to %s\'s wallet.', $amount, $wallet->getOwner());
             $logType = 'success';
             $transType = 'In';
+            $emailSubject = 'Deposit Successful - Nexora';
         } else {
             $wallet->setBalance((string)($currentBalance - $amount));
             $message = sprintf('Withdrawal of %.2f TND made from %s\'s wallet.', $amount, $wallet->getOwner());
             $logType = 'warning';
             $transType = 'Out';
+            $emailSubject = 'Withdrawal Successful - Nexora';
         }
 
         // --- NEW: Record as Transaction Entity ---
@@ -199,11 +204,53 @@ class WalletController extends AbstractController
             $this->addFlash('warning', sprintf('⚠️ ALERTE : Le solde de %s est descendu sous le seuil critique (%.2f TND) !', $wallet->getOwner(), (float)$wallet->getBalance()));
         }
 
+        // Email variables
+        $userEmail = $request->getSession()->get('user_email');
+        $userName = $request->getSession()->get('user_name') ?? $wallet->getOwner();
+
+        // Envoyer l'email de transaction si on a l'adresse de l'utilisateur
+        if ($userEmail) {
+            try {
+                $email = (new TemplatedEmail())
+                    ->from(new Address('no-reply@nexora.com', 'Nexora Wallet'))
+                    ->to($userEmail)
+                    ->subject($emailSubject)
+                    ->htmlTemplate('emails/transaction.html.twig')
+                    ->context([
+                        'user_name' => $userName,
+                        'type' => $type,
+                        'amount' => $amount,
+                        'balance' => $wallet->getBalance(),
+                    ]);
+                $mailer->send($email);
+            } catch (\Exception $e) {
+                $this->addFlash('danger', 'Transaction saved, but failed to send email: ' . $e->getMessage());
+            }
+        }
+
         // Vérifier si de nouveaux buts sont atteints
         if ($type === 'Deposit') {
             foreach ($wallet->getWalletGoals() as $goal) {
                 if ($goal->getProgression() >= 100 && !in_array($goal->getId(), $alreadyAchievedIds)) {
                     $this->addFlash('congrats', sprintf('🏆 TOUTES NOS FÉLICITATIONS ! L\'objectif "%s" est désormais ATTEINT !', $goal->getName()));
+                    
+                    if ($userEmail) {
+                        try {
+                            $goalEmail = (new TemplatedEmail())
+                                ->from(new Address('no-reply@nexora.com', 'Nexora Wallet'))
+                                ->to($userEmail)
+                                ->subject('🏆 Objectif Atteint: ' . $goal->getName())
+                                ->htmlTemplate('emails/goal_achieved.html.twig')
+                                ->context([
+                                    'user_name' => $userName,
+                                    'goal_name' => $goal->getName(),
+                                    'goal_amount' => $goal->getTargetAmount(),
+                                ]);
+                            $mailer->send($goalEmail);
+                        } catch (\Exception $e) {
+                            // Erreur d'envoi ignorée silencieusement pour ne pas bloquer
+                        }
+                    }
                 }
             }
         }

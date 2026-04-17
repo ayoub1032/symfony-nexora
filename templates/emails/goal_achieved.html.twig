@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Inter', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .header { text-align: center; border-bottom: 2px solid #e0e6ed; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { color: #f39c12; margin: 0; font-size: 28px; }
+        .content { line-height: 1.6; font-size: 16px; text-align: center; }
+        .trophy { font-size: 50px; margin: 10px 0; }
+        .details { background: #fdfbf7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #fae5d3; text-align: left; }
+        .details p { margin: 8px 0; font-weight: 500; font-size: 18px; text-align: center; }
+        .footer { text-align: center; margin-top: 30px; color: #888; font-size: 14px; }
+        .highlight { color: #d35400; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Congratulations! 🎉</h1>
+        </div>
+        <div class="content">
+            <div class="trophy">🏆</div>
+            <p>Hello <strong>{{ user_name }}</strong>,</p>
+            <p>We are thrilled to let you know that you have successfully reached one of your financial goals!</p>
+            
+            <div class="details">
+                <p>Goal: <span class="highlight">{{ goal_name }}</span></p>
+                <p>Target Amount: <strong>{{ goal_amount|number_format(2) }} TND</strong></p>
+            </div>
+            
+            <p>Keep up the great work and continue building your wealth with Nexora Wallet!</p>
+        </div>
+        <div class="footer">
+            &copy; {{ 'now'|date('Y') }} Nexora Wallet. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
