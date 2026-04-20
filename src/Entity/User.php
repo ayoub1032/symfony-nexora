@@ -49,6 +49,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $faceImage = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $googleId = null;
+
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Wallet::class)]
     private ?Wallet $wallet = null;
 
@@ -209,6 +212,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setFaceImage(?string $faceImage): self
     {
         $this->faceImage = $faceImage;
+
+        return $this;
+    }
+
+    public function getGoogleId(): ?string
+    {
+        return $this->googleId;
+    }
+
+    public function setGoogleId(?string $googleId): self
+    {
+        $this->googleId = $googleId;
 
         return $this;
     }

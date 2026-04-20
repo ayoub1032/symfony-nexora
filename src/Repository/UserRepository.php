@@ -20,4 +20,9 @@ class UserRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['email' => strtolower($email)]);
     }
+
+    public function findOneByGoogleId(string $googleId): ?User
+    {
+        return $this->findOneBy(['googleId' => $googleId]);
+    }
 }

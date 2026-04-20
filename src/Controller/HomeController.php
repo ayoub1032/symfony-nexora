@@ -165,8 +165,11 @@ class HomeController extends AbstractController
                 ]);
             }
 
-            // Face image (optional – captured from webcam as base64)
+            // Face image (optional)
             $faceImageBase64 = trim((string) $request->request->get('face_image', ''));
+
+            // Google link (optional – set when user linked Google before submitting)
+            $googleId = (string) $request->getSession()->get('google_link_id', '');
 
             $user = new User();
             $user->setFullName($fullName);
@@ -176,6 +179,13 @@ class HomeController extends AbstractController
 
             if ($faceImageBase64 !== '') {
                 $user->setFaceImage($faceImageBase64);
+            }
+
+            if ($googleId !== '') {
+                $user->setGoogleId($googleId);
+                $request->getSession()->remove('google_link_id');
+                $request->getSession()->remove('google_link_email');
+                $request->getSession()->remove('google_link_name');
             }
 
             $wallet = new Wallet();
@@ -211,7 +221,10 @@ class HomeController extends AbstractController
         }
 
         return $this->render('security/register.html.twig', [
-            'form_data' => $formData,
+            'form_data'     => $formData,
+            'google_linked' => $request->getSession()->get('google_link_id') !== null,
+            'google_email'  => (string) $request->getSession()->get('google_link_email', ''),
+            'google_name'   => (string) $request->getSession()->get('google_link_name', ''),
         ]);
     }
 
