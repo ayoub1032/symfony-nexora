@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Login - Nexora</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        .face-card { max-width: 480px; margin: 0 auto; }
+
+        .camera-wrapper {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #0a0f1e;
+            aspect-ratio: 4/3;
+            border: 2px solid rgba(124,58,237,0.4);
+            box-shadow: 0 0 40px rgba(124,58,237,0.2);
+        }
+        #faceVideo {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            transform: scaleX(-1);
+        }
+        #faceCanvas { display: none; }
+
+        .scan-overlay { position: absolute; inset: 0; pointer-events: none; }
+        .scan-line {
+            position: absolute; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #7c3aed, #06b6d4, transparent);
+            animation: scanMove 2.5s linear infinite;
+            opacity: 0; transition: opacity .3s;
+        }
+        .scan-line.active { opacity: 1; }
+        @keyframes scanMove { 0% { top: 5%; } 100% { top: 95%; } }
+
+        .corner { position: absolute; width: 28px; height: 28px; }
+        .corner-tl { top:16px;left:16px;   border-top:3px solid #7c3aed; border-left:3px solid #7c3aed;   border-radius:4px 0 0 0; }
+        .corner-tr { top:16px;right:16px;  border-top:3px solid #7c3aed; border-right:3px solid #7c3aed;  border-radius:0 4px 0 0; }
+        .corner-bl { bottom:16px;left:16px; border-bottom:3px solid #7c3aed; border-left:3px solid #7c3aed; border-radius:0 0 0 4px; }
+        .corner-br { bottom:16px;right:16px;border-bottom:3px solid #7c3aed; border-right:3px solid #7c3aed;border-radius:0 0 4px 0; }
+
+        /* Face oval guide */
+        .face-guide {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .face-oval {
+            width: 52%; height: 72%;
+            border: 2px dashed rgba(124,58,237,0.5);
+            border-radius: 50%;
+        }
+
+        .face-status {
+            margin-top: 16px; padding: 14px 18px; border-radius: 14px;
+            font-size: 14px; line-height: 1.6; text-align: center;
+            font-weight: 500; transition: all .3s;
+        }
+        .face-status.idle    { background:#f8fafc; color:#64748b; border:1px solid #e2e8f0; }
+        .face-status.loading { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+        .face-status.success { background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0; }
+        .face-status.error   { background:#fff1f2; color:#be123c; border:1px solid #fecdd3; }
+
+        .confidence-bar-wrap { margin-top:10px; }
+        .confidence-bar { height:6px; border-radius:99px; background:#e2e8f0; overflow:hidden; }
+        .confidence-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#7c3aed,#06b6d4); width:0; transition:width .6s ease; }
+        .confidence-label { font-size:12px; color:#64748b; margin-top:4px; text-align:right; }
+
+        .btn-face {
+            width:100%; padding:14px; border:none; border-radius:14px; cursor:pointer;
+            font-size:15px; font-weight:700; font-family:'Outfit',sans-serif;
+            background:linear-gradient(135deg,#7c3aed,#06b6d4); color:#fff; margin-top:16px;
+            transition:opacity .2s, transform .1s;
+        }
+        .btn-face:hover:not(:disabled) { opacity:.9; transform:translateY(-1px); }
+        .btn-face:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+        .divider-or { display:flex; align-items:center; gap:12px; color:#94a3b8; font-size:13px; margin:20px 0; }
+        .divider-or::before, .divider-or::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+    </style>
+</head>
+<body class="auth-page">
+<main class="auth-shell">
+    <section class="auth-panel auth-brand">
+        <div class="auth-brand-inner">
+            <div class="auth-logo">
+                <span class="auth-logo-box"><i class="fas fa-bolt"></i></span>
+                <span>NEXORA</span>
+            </div>
+            <p class="auth-kicker">AI-Powered Authentication</p>
+            <h1>Login with your face.</h1>
+            <p class="auth-copy">
+                Nexora uses the Face++ AI engine to instantly recognise you.
+                Simply look at the camera — no email or password needed.
+            </p>
+            <div class="auth-hints">
+                <div><i class="fas fa-brain"></i> Powered by Face++ AI recognition</div>
+                <div><i class="fas fa-shield-alt"></i> 80% confidence threshold required</div>
+                <div><i class="fas fa-lightbulb"></i> Use good lighting &amp; look straight ahead</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel auth-form-panel">
+        <div class="auth-form-card face-card">
+            <h2>Face Recognition</h2>
+            <p class="auth-form-copy">Just look at the camera and click <strong>Scan My Face</strong> — we'll find your account.</p>
+
+            <!-- Camera -->
+            <div class="camera-wrapper" id="cameraWrapper">
+                <video id="faceVideo" autoplay playsinline muted></video>
+                <canvas id="faceCanvas"></canvas>
+                <div class="scan-overlay">
+                    <div class="scan-line" id="scanLine"></div>
+                    <div class="face-guide"><div class="face-oval"></div></div>
+                    <div class="corner corner-tl"></div>
+                    <div class="corner corner-tr"></div>
+                    <div class="corner corner-bl"></div>
+                    <div class="corner corner-br"></div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="face-status idle" id="faceStatus">
+                <i class="fas fa-camera"></i>&nbsp; Centre your face in the oval, then click <strong>Scan My Face</strong>
+            </div>
+
+            <!-- Confidence bar -->
+            <div class="confidence-bar-wrap" id="confidenceWrap" style="display:none;">
+                <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill"></div></div>
+                <div class="confidence-label" id="confidenceLabel"></div>
+            </div>
+
+            <button class="btn-face" id="btnScan">
+                <i class="fas fa-camera-retro"></i>&nbsp; Scan My Face
+            </button>
+
+            <div class="divider-or">or</div>
+
+            <div class="auth-switch" style="text-align:center;">
+                <a href="{{ path('app_login') }}"><i class="fas fa-key"></i> Login with password instead</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+(function () {
+    const video      = document.getElementById('faceVideo');
+    const canvas     = document.getElementById('faceCanvas');
+    const btnScan    = document.getElementById('btnScan');
+    const statusBox  = document.getElementById('faceStatus');
+    const scanLine   = document.getElementById('scanLine');
+    const confWrap   = document.getElementById('confidenceWrap');
+    const confFill   = document.getElementById('confidenceFill');
+    const confLabel  = document.getElementById('confidenceLabel');
+
+    let stream = null;
+
+    function setStatus(type, html) {
+        statusBox.className = 'face-status ' + type;
+        statusBox.innerHTML = html;
+    }
+
+    function showConfidence(val) {
+        confWrap.style.display = 'block';
+        setTimeout(() => {
+            confFill.style.width = Math.min(val, 100) + '%';
+            confLabel.textContent = val.toFixed(1) + '% match';
+        }, 100);
+    }
+
+    async function startCamera() {
+        if (stream) return true;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480, facingMode:'user' } });
+            video.srcObject = stream;
+            return true;
+        } catch (e) {
+            setStatus('error', '<i class="fas fa-exclamation-triangle"></i> Camera access denied. Please allow it in your browser settings.');
+            return false;
+        }
+    }
+
+    function captureFrame() {
+        canvas.width  = video.videoWidth  || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.restore();
+        return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    btnScan.addEventListener('click', async () => {
+        const ok = await startCamera();
+        if (!ok) return;
+
+        // Warm up camera
+        await new Promise(r => setTimeout(r, 700));
+
+        scanLine.classList.add('active');
+        btnScan.disabled = true;
+        confWrap.style.display = 'none';
+        confFill.style.width   = '0';
+        setStatus('loading', '<i class="fas fa-spinner fa-spin"></i>&nbsp; Scanning face with AI…');
+
+        const image = captureFrame();
+
+        // Let scan animation run visually
+        await new Promise(r => setTimeout(r, 1800));
+
+        try {
+            const res  = await fetch('{{ path("app_face_login_check") }}', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ face_image: image }),
+            });
+            const data = await res.json();
+
+            scanLine.classList.remove('active');
+
+            if (data.confidence !== undefined) showConfidence(data.confidence);
+
+            if (data.success) {
+                setStatus('success', '<i class="fas fa-check-circle"></i>&nbsp; ' + data.message);
+                setTimeout(() => { window.location.href = data.redirect; }, 1200);
+            } else {
+                setStatus('error', '<i class="fas fa-times-circle"></i>&nbsp; ' + data.message);
+                btnScan.disabled = false;
+            }
+        } catch (err) {
+            scanLine.classList.remove('active');
+            setStatus('error', '<i class="fas fa-wifi"></i>&nbsp; Network error. Please try again.');
+            btnScan.disabled = false;
+        }
+    });
+
+    // Auto-start camera
+    startCamera();
+})();
+</script>
+</body>
+</html>

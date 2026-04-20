@@ -7,6 +7,79 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        /* ── Webcam section ── */
+        .face-section {
+            margin-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        .face-section-label {
+            font-size: 13px; font-weight: 700; color: #7c3aed;
+            letter-spacing: .5px; text-transform: uppercase; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .face-section-label span { font-size: 11px; color: #94a3b8; font-weight: 400; text-transform: none; }
+
+        .cam-wrapper {
+            position: relative; border-radius: 16px; overflow: hidden;
+            background: #0a0f1e; aspect-ratio: 4/3;
+            border: 2px solid rgba(124,58,237,0.35);
+            box-shadow: 0 0 28px rgba(124,58,237,0.15);
+        }
+        #regVideo {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+            transform: scaleX(-1);
+        }
+        #regCanvas { display: none; }
+
+        /* Corners */
+        .vcorner { position: absolute; width: 22px; height: 22px; }
+        .vcorner.tl { top:10px; left:10px; border-top:3px solid #7c3aed; border-left:3px solid #7c3aed; border-radius:4px 0 0 0;}
+        .vcorner.tr { top:10px; right:10px; border-top:3px solid #7c3aed; border-right:3px solid #7c3aed; border-radius:0 4px 0 0;}
+        .vcorner.bl { bottom:10px; left:10px; border-bottom:3px solid #7c3aed; border-left:3px solid #7c3aed; border-radius:0 0 0 4px;}
+        .vcorner.br { bottom:10px; right:10px; border-bottom:3px solid #7c3aed; border-right:3px solid #7c3aed; border-radius:0 0 4px 0;}
+
+        /* Captured preview */
+        .cam-preview {
+            display: none;
+            border-radius: 16px; overflow: hidden;
+            border: 2px solid #10b981;
+            box-shadow: 0 0 20px rgba(16,185,129,0.25);
+            aspect-ratio: 4/3; position: relative;
+        }
+        .cam-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cam-preview-badge {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(16,185,129,0.9); color: #fff;
+            font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 99px;
+        }
+
+        .cam-controls { display: flex; gap: 10px; margin-top: 12px; }
+        .btn-cam {
+            flex: 1; padding: 11px; border: none; border-radius: 12px; cursor: pointer;
+            font-size: 13px; font-weight: 700; font-family: 'Outfit', sans-serif;
+            transition: opacity .2s, transform .1s;
+        }
+        .btn-cam:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+        .btn-cam:disabled { opacity: .45; cursor: not-allowed; }
+        .btn-cam-start  { background: linear-gradient(135deg,#7c3aed,#06b6d4); color: #fff; }
+        .btn-cam-snap   { background: linear-gradient(135deg,#10b981,#059669); color: #fff; }
+        .btn-cam-retake { background: #f1f5f9; color: #475569; }
+
+        .cam-hint {
+            font-size: 12px; color: #94a3b8; text-align: center; margin-top: 8px;
+            line-height: 1.6;
+        }
+        .cam-hint.ok { color: #10b981; font-weight: 600; }
+        .cam-hint.warn { color: #f59e0b; }
+
+        .face-optional-note {
+            background: #f0fdf4; border: 1px solid #bbf7d0;
+            border-radius: 12px; padding: 12px 14px;
+            font-size: 13px; color: #15803d; margin-top: 12px; line-height: 1.6;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <main class="auth-shell">
@@ -22,8 +95,9 @@
                     New registrations are created as standard user accounts and receive an empty wallet automatically.
                 </p>
                 <div class="auth-hints">
-                    <div><i class="fas fa-user"></i> Every self-created account is assigned the `USER` role.</div>
+                    <div><i class="fas fa-user"></i> Every self-created account is assigned the <code>USER</code> role.</div>
                     <div><i class="fas fa-wallet"></i> A wallet is created automatically so the account can log in immediately.</div>
+                    <div><i class="fas fa-camera"></i> Optionally register your face to enable Face ID login.</div>
                 </div>
             </div>
         </section>
@@ -41,7 +115,7 @@
                     {% endfor %}
                 {% endfor %}
 
-                <form method="post" action="{{ path('app_register') }}">
+                <form method="post" action="{{ path('app_register') }}" id="registerForm">
                     <div class="form-group">
                         <label>Full Name</label>
                         <div class="input-with-icon">
@@ -74,7 +148,58 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                    <!-- ── Face Photo (optional) ── -->
+                    <div class="face-section">
+                        <div class="face-section-label">
+                            <i class="fas fa-camera"></i> Face Recognition Setup
+                            <span>(optional — enables AI face login)</span>
+                        </div>
+
+                        <!-- Live camera -->
+                        <div class="cam-wrapper" id="camWrapper">
+                            <video id="regVideo" autoplay playsinline muted></video>
+                            <canvas id="regCanvas"></canvas>
+                            <div class="vcorner tl"></div>
+                            <div class="vcorner tr"></div>
+                            <div class="vcorner bl"></div>
+                            <div class="vcorner br"></div>
+                        </div>
+
+                        <!-- Captured preview (shown after snap) -->
+                        <div class="cam-preview" id="camPreview">
+                            <img id="previewImg" src="" alt="Captured face">
+                            <div class="cam-preview-badge"><i class="fas fa-check"></i> Face captured</div>
+                        </div>
+
+                        <div class="cam-controls">
+                            <button type="button" class="btn-cam btn-cam-start" id="btnStartCam">
+                                <i class="fas fa-video"></i> Start Camera
+                            </button>
+                            <button type="button" class="btn-cam btn-cam-snap" id="btnSnap" disabled>
+                                <i class="fas fa-camera"></i> Capture Face
+                            </button>
+                            <button type="button" class="btn-cam btn-cam-retake" id="btnRetake" style="display:none;">
+                                <i class="fas fa-redo"></i> Retake
+                            </button>
+                        </div>
+
+                        <div class="cam-hint" id="camHint">
+                            Click <strong>Start Camera</strong> then look straight at the camera and click <strong>Capture Face</strong>.
+                        </div>
+
+                        <div class="face-optional-note">
+                            <i class="fas fa-info-circle"></i>
+                            If you skip this step, you can still log in with your email &amp; password.
+                            You can add a face photo later from your profile settings.
+                        </div>
+
+                        <!-- Hidden field sent with the form -->
+                        <input type="hidden" name="face_image" id="faceImageInput">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top:20px;">
+                        Create Account
+                    </button>
                 </form>
 
                 <div class="auth-switch">
@@ -84,5 +209,77 @@
             </div>
         </section>
     </main>
+
+<script>
+(function () {
+    const btnStart   = document.getElementById('btnStartCam');
+    const btnSnap    = document.getElementById('btnSnap');
+    const btnRetake  = document.getElementById('btnRetake');
+    const video      = document.getElementById('regVideo');
+    const canvas     = document.getElementById('regCanvas');
+    const camWrapper = document.getElementById('camWrapper');
+    const preview    = document.getElementById('camPreview');
+    const previewImg = document.getElementById('previewImg');
+    const hint       = document.getElementById('camHint');
+    const faceInput  = document.getElementById('faceImageInput');
+
+    let stream = null;
+
+    btnStart.addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+            video.srcObject = stream;
+            btnStart.disabled = true;
+            btnSnap.disabled  = false;
+            hint.textContent  = 'Look straight at the camera, then click Capture Face.';
+        } catch (e) {
+            hint.className = 'cam-hint warn';
+            hint.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Camera access denied. You can still register without face recognition.';
+        }
+    });
+
+    btnSnap.addEventListener('click', () => {
+        canvas.width  = video.videoWidth  || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        // Un-mirror the capture so Face++ gets the correct orientation
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        faceInput.value = dataUrl;
+
+        // Show preview
+        previewImg.src = dataUrl;
+        camWrapper.style.display = 'none';
+        preview.style.display    = 'block';
+        btnSnap.style.display    = 'none';
+        btnStart.style.display   = 'none';
+        btnRetake.style.display  = 'flex';
+
+        hint.className  = 'cam-hint ok';
+        hint.innerHTML  = '<i class="fas fa-check-circle"></i> Face captured! You can retake or submit the form.';
+
+        // Stop stream
+        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    });
+
+    btnRetake.addEventListener('click', () => {
+        faceInput.value = '';
+        previewImg.src  = '';
+        preview.style.display    = 'none';
+        camWrapper.style.display = 'block';
+        btnRetake.style.display  = 'none';
+        btnStart.style.display   = 'flex';
+        btnStart.disabled        = false;
+        btnSnap.style.display    = 'flex';
+        btnSnap.disabled         = true;
+        hint.className  = 'cam-hint';
+        hint.innerHTML  = 'Click <strong>Start Camera</strong> then look straight at the camera and click <strong>Capture Face</strong>.';
+    });
+})();
+</script>
 </body>
 </html>

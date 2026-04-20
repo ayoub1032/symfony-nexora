@@ -5,8 +5,10 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\Wallet;
 use App\Repository\UserRepository;
+use App\Service\FaceCompareService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
@@ -100,7 +102,8 @@ class HomeController extends AbstractController
         UserRepository $userRepository,
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        FaceCompareService $faceCompare
     ): Response {
         if ($request->getSession()->get('role')) {
             return $this->redirectToRoute('wallet_index');
@@ -162,11 +165,18 @@ class HomeController extends AbstractController
                 ]);
             }
 
+            // Face image (optional – captured from webcam as base64)
+            $faceImageBase64 = trim((string) $request->request->get('face_image', ''));
+
             $user = new User();
             $user->setFullName($fullName);
             $user->setEmail($email);
             $user->setRoles(['ROLE_USER']);
             $user->setPassword($passwordHasher->hashPassword($user, $password));
+
+            if ($faceImageBase64 !== '') {
+                $user->setFaceImage($faceImageBase64);
+            }
 
             $wallet = new Wallet();
             $wallet->setOwner($fullName);
@@ -438,6 +448,92 @@ class HomeController extends AbstractController
 
         return $this->redirectToRoute('app_login');
     }
+
+    // ──────────────────────────── FACE RECOGNITION ────────────────────────────
+
+    #[Route('/login/face', name: 'app_face_login', methods: ['GET'])]
+    public function faceLoginPage(Request $request): Response
+    {
+        if ($request->getSession()->get('role')) {
+            return $this->redirectToRoute('wallet_index');
+        }
+
+        return $this->render('security/face_login.html.twig');
+    }
+
+    /**
+     * JSON endpoint called by JS: receives {email, face_image (base64)}
+     * Compares against stored face, returns {success, confidence, message}
+     */
+    #[Route('/login/face/check', name: 'app_face_login_check', methods: ['POST'])]
+    public function faceLoginCheck(
+        Request $request,
+        UserRepository $userRepository,
+        FaceCompareService $faceCompare
+    ): JsonResponse {
+        if ($request->getSession()->get('role')) {
+            return $this->json(['success' => false, 'message' => 'Already logged in.']);
+        }
+
+        $data    = json_decode((string) $request->getContent(), true) ?? [];
+        $faceB64 = trim((string) ($data['face_image'] ?? ''));
+
+        if ($faceB64 === '') {
+            return $this->json(['success' => false, 'message' => 'No face image received.'], 400);
+        }
+
+        // Scan all users who have a registered face
+        $users = $userRepository->findAll();
+        $bestScore = 0.0;
+        $bestUser  = null;
+
+        foreach ($users as $user) {
+            if (!$user->getFaceImage()) {
+                continue;
+            }
+
+            $confidence = $faceCompare->compare($user->getFaceImage(), $faceB64);
+
+            if ($confidence !== null && $confidence > $bestScore) {
+                $bestScore = $confidence;
+                $bestUser  = $user;
+            }
+        }
+
+        if ($bestUser === null) {
+            return $this->json([
+                'success' => false,
+                'message' => 'No face could be detected, or no registered accounts matched. Ensure good lighting and look directly at the camera.',
+            ], 422);
+        }
+
+        if ($bestScore < 80.0) {
+            return $this->json([
+                'success'    => false,
+                'confidence' => round($bestScore, 1),
+                'message'    => sprintf('Face match too low (%.1f%%). Please try again in better lighting.', $bestScore),
+            ], 401);
+        }
+
+        // ✅ Match — open session
+        $wallet  = $bestUser->getWallet();
+        $isAdmin = $bestUser->hasRole('ROLE_ADMIN');
+
+        $session = $request->getSession();
+        $session->set('user_id',             $bestUser->getId());
+        $session->set('user_name',           $bestUser->getFullName());
+        $session->set('user_email',          $bestUser->getEmail());
+        $session->set('role',                $isAdmin ? 'ADMIN' : 'USER');
+        $session->set('logged_in_wallet_id', $wallet?->getId());
+
+        return $this->json([
+            'success'    => true,
+            'confidence' => round($bestScore, 1),
+            'message'    => sprintf('Identity verified (%.1f%% match). Welcome back, %s!', $bestScore, $bestUser->getFullName()),
+            'redirect'   => $this->generateUrl('wallet_index'),
+        ]);
+    }
+
 
     private function generateResetPin(): string
     {

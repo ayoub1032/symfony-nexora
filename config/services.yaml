@@ -9,6 +9,8 @@
 parameters:
     app.mailer_from_address: '%env(string:MAILER_FROM_ADDRESS)%'
     app.mailer_from_name: '%env(string:MAILER_FROM_NAME)%'
+    app.facepp_api_key: '%env(string:FACEPP_API_KEY)%'
+    app.facepp_api_secret: '%env(string:FACEPP_API_SECRET)%'
 
 services:
     # default configuration for services in *this* file
@@ -23,3 +25,8 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    App\Service\FaceCompareService:
+        arguments:
+            $apiKey: '%app.facepp_api_key%'
+            $apiSecret: '%app.facepp_api_secret%'

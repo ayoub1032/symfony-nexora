@@ -1078,3 +1078,132 @@ body {
         padding: 24px;
     }
 }
+
+/* ═══════════════════════════════════════════════
+   ADMIN THEME  (body[data-role="ADMIN"])
+   ═══════════════════════════════════════════════ */
+
+body[data-role="ADMIN"] .sidebar {
+    background: linear-gradient(180deg, #1a0505 0%, #0d0000 100%);
+    border-right: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+body[data-role="ADMIN"] .admin-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 40px;
+    letter-spacing: 1.5px;
+}
+
+body[data-role="ADMIN"] .admin-logo-box {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(220,38,38,0.5);
+    flex-shrink: 0;
+}
+
+.admin-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fca5a5;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+body[data-role="ADMIN"] .nav-link:hover,
+body[data-role="ADMIN"] .nav-link.active {
+    background: rgba(220, 38, 38, 0.12);
+    color: #fca5a5;
+}
+
+body[data-role="ADMIN"] .nav-link.active {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: white;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+}
+
+body[data-role="ADMIN"] .nav-link-logout {
+    color: #fca5a5 !important;
+}
+
+body[data-role="ADMIN"] .nav-link-logout:hover {
+    background: rgba(220,38,38,0.15) !important;
+    color: #ef4444 !important;
+}
+
+.nav-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #64748b;
+    padding: 16px 18px 6px 18px;
+}
+
+body[data-role="ADMIN"] .nav-section-title {
+    color: rgba(252,165,165,0.5);
+}
+
+body[data-role="ADMIN"] .main-content {
+    background: radial-gradient(circle at top right, #1c0a0a, #0f0808 60%, #0f172a);
+}
+
+body[data-role="ADMIN"] .top-bar {
+    background: rgba(26, 5, 5, 0.85);
+    border-bottom: 1px solid rgba(220, 38, 38, 0.12);
+}
+
+body[data-role="ADMIN"] .sidebar-footer {
+    color: rgba(252,165,165,0.35);
+}
+
+/* Admin accent on inputs / buttons when in admin context */
+body[data-role="ADMIN"] .btn-primary {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+body[data-role="ADMIN"] .btn-primary:hover {
+    background: linear-gradient(135deg, #b91c1c, #991b1b);
+}
+
+body[data-role="ADMIN"] .input-with-icon input:focus,
+body[data-role="ADMIN"] .input-with-icon select:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220,38,38,0.15);
+}
+
+body[data-role="ADMIN"] .nav-link.active i {
+    color: white;
+}
+
+/* Admin top-bar user role badge */
+body[data-role="ADMIN"] .user-role {
+    color: #fca5a5;
+    font-weight: 600;
+}
+
+body[data-role="ADMIN"] .user-profile img {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220,38,38,0.3);
+}
+
+/* Admin stat cards accent */
+body[data-role="ADMIN"] .stat-icon.purple {
+    background: rgba(220,38,38,0.1);
+    color: #f87171;
+}
+
+/* Admin data card header accent line */
+body[data-role="ADMIN"] .data-card {
+    border-top: 2px solid rgba(220,38,38,0.3);
+}
+

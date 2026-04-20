@@ -9,15 +9,28 @@
         <link rel="stylesheet" href="{{ asset('css/style.css') }}">
         {% block stylesheets %}{% endblock %}
     </head>
-    <body class="bg-dark text-light">
+    <body class="bg-dark text-light" data-role="{{ app.session.get('role') }}">
         <div class="app-container">
             <aside class="sidebar">
+                {% if app.session.get('role') == 'ADMIN' %}
+                <div class="logo admin-logo">
+                    <div class="logo-box admin-logo-box">
+                        <i class="fas fa-crown logo-icon"></i>
+                    </div>
+                    <div>
+                        <span>NEXORA</span>
+                        <div class="admin-badge">ADMIN PANEL</div>
+                    </div>
+                </div>
+                {% else %}
                 <div class="logo">
                     <div class="logo-box">
                         <i class="fas fa-bolt logo-icon"></i>
                     </div>
                     <span>NEXORA</span>
                 </div>
+                {% endif %}
+
                 <nav class="nav-menu">
                     <a href="{{ path('wallet_index') }}" class="nav-link {% if app.request.attributes.get('_route') == 'wallet_index' %}active{% endif %}">
                         <i class="fas fa-th-large"></i> 
@@ -28,34 +41,29 @@
                         {{ app.session.get('role') == 'ADMIN' ? 'Trading Watchlist' : 'My Trading Goals' }}
                     </a>
                     <a href="{{ path('asset_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'asset' %}active{% endif %}">
-                        <i class="fas fa-chart-line"></i> 
-                        Assets
+                        <i class="fas fa-chart-line"></i> Assets
                     </a>
                     <a href="{{ path('portfolio_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'portfolio' %}active{% endif %}">
-                        <i class="fas fa-briefcase"></i> 
-                        Portfolios
+                        <i class="fas fa-briefcase"></i> Portfolios
                     </a>
                     <a href="{{ path('order_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'order' %}active{% endif %}">
-                        <i class="fas fa-shopping-cart"></i> 
-                        Orders
+                        <i class="fas fa-shopping-cart"></i> Orders
                     </a>
                     <a href="{{ path('p2p_contract_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'p2p_contract' %}active{% endif %}">
-                        <i class="fas fa-handshake"></i> 
-                        P2P Contracts
+                        <i class="fas fa-handshake"></i> P2P Contracts
                     </a>
                     <a href="{{ path('user_reputation_index') }}" class="nav-link {% if app.request.attributes.get('_route') starts with 'user_reputation' %}active{% endif %}">
-                        <i class="fas fa-star"></i> 
-                        User Reputations
+                        <i class="fas fa-star"></i> User Reputations
                     </a>
                     {% if app.session.get('role') == 'ADMIN' %}
+                    <div class="nav-section-title">Management</div>
                     <a href="{{ path('user_index') }}" class="nav-link {% if app.request.attributes.get('_route') in ['user_index', 'user_create', 'user_update', 'user_delete'] %}active{% endif %}">
-                        <i class="fas fa-users"></i>
-                        Users
+                        <i class="fas fa-users"></i> User Management
                     </a>
                     {% endif %}
                     
                     <div style="margin-top: auto; padding-top: 2rem;">
-                        <a href="{{ path('app_logout') }}" class="nav-link" style="color: #ef4444;">
+                        <a href="{{ path('app_logout') }}" class="nav-link nav-link-logout">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </div>
@@ -78,7 +86,7 @@
                                 <span class="user-name">{{ app.session.get('user_name', 'Guest') }}</span>
                                 <span class="user-role">{{ app.session.get('role', 'VISITOR') }}</span>
                             </div>
-                            <img src="https://ui-avatars.com/api/?name={{ app.session.get('user_name', 'Guest') }}&background={{ app.session.get('role') == 'ADMIN' ? '6366f1' : '10b981' }}&color=fff" alt="Avatar">
+                            <img src="https://ui-avatars.com/api/?name={{ app.session.get('user_name', 'Guest') }}&background={{ app.session.get('role') == 'ADMIN' ? 'dc2626' : '10b981' }}&color=fff" alt="Avatar">
                         </div>
                     </div>
                 </header>
@@ -88,6 +96,7 @@
                 </div>
             </main>
         </div>
+
 
         {# Flash Message Modal #}
         {% set flashes = app.flashes %}

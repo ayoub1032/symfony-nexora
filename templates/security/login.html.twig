@@ -65,6 +65,15 @@
                     <a href="{{ path('app_forgot_password') }}">Forgot password?</a>
                 </div>
 
+                <div style="display:flex;align-items:center;gap:12px;color:#94a3b8;font-size:13px;margin:16px 0;">
+                    <span style="flex:1;height:1px;background:#e2e8f0;"></span>or<span style="flex:1;height:1px;background:#e2e8f0;"></span>
+                </div>
+
+                <a href="{{ path('app_face_login') }}" class="btn btn-primary btn-block" id="btn-face-login"
+                   style="display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(135deg,#7c3aed,#06b6d4);text-decoration:none;">
+                    <i class="fas fa-camera"></i> Login with Face Recognition
+                </a>
+
                 <div class="auth-switch">
                     No account yet?
                     <a href="{{ path('app_register') }}">Create one</a>

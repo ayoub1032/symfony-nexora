@@ -46,6 +46,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $resetPinRequestedAt = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $faceImage = null;
+
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Wallet::class)]
     private ?Wallet $wallet = null;
 
@@ -196,5 +199,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function hasRole(string $role): bool
     {
         return in_array($role, $this->getRoles(), true);
+    }
+
+    public function getFaceImage(): ?string
+    {
+        return $this->faceImage;
+    }
+
+    public function setFaceImage(?string $faceImage): self
+    {
+        $this->faceImage = $faceImage;
+
+        return $this;
     }
 }
