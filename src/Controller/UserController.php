@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Entity\Wallet;
+use App\Entity\Portfolio;
+use App\Entity\UserReputation;
 use App\Repository\UserRepository;
 use App\Repository\WalletRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -77,18 +79,25 @@ class UserController extends AbstractController
 
         $user->setPassword($passwordHasher->hashPassword($user, $password));
 
-        $wallet = $this->resolveWallet($walletRepository, $walletId, $user);
-        if (!$wallet && $walletId) {
-            $this->addFlash('danger', 'Selected wallet is already linked to another user.');
+        $wallet = new Wallet();
+        $wallet->setUser($user);
+        $wallet->setOwner($user->getFullName());
+        $wallet->setBalance(0.0);
+        $wallet->setCreatedAt(new \DateTime());
+        $entityManager->persist($wallet);
 
-            return $this->redirectToRoute('user_index');
-        }
+        $portfolio = new Portfolio();
+        $portfolio->setUser($user);
+        $portfolio->setTotalValue(0.0);
+        $entityManager->persist($portfolio);
 
-        if ($wallet) {
-            $wallet->setUser($user);
-            $wallet->setOwner($user->getFullName() ?? $wallet->getOwner());
-            $user->setWallet($wallet);
-        }
+        $reputation = new UserReputation();
+        $reputation->setUser($user);
+        $reputation->setCompletedContracts(0);
+        $reputation->setCanceledContracts(0);
+        $reputation->setTotalScore(0);
+        $reputation->setRatingCount(0);
+        $entityManager->persist($reputation);
 
         $errors = $validator->validate($user);
         if (count($errors) > 0) {

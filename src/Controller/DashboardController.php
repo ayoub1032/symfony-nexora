@@ -26,7 +26,8 @@ class DashboardController extends AbstractController
         TransactionRepository $transactionRepository,
         WalletRepository $walletRepository,
         WalletGoalRepository $goalRepository,
-        CurrencyService $currencyService
+        CurrencyService $currencyService,
+        \App\Service\ReputationService $reputationService
     ): Response
     {
         if (!$request->getSession()->get('role')) {
@@ -141,6 +142,13 @@ class DashboardController extends AbstractController
                 : "Alerte Cash-Flow : Vos retraits (" . number_format($totalOut, 2) . " TND) dépassent vos dépôts. Surveillez votre balance."
         ];
 
+        // --- Reputation Stats ---
+        $reputation = null;
+        $user = $wallet ? $wallet->getUser() : null;
+        if ($user) {
+            $reputation = $reputationService->getReputationStats($user);
+        }
+
         return $this->render('dashboard/index.html.twig', [
             'chart1' => $chart1,
             'chart2' => $chart2,
@@ -149,7 +157,8 @@ class DashboardController extends AbstractController
             'wallet' => $wallet,
             'rates' => $rates,
             'analysis' => $analysis,
-            'stats' => $stats
+            'stats' => $stats,
+            'reputation' => $reputation
         ]);
     }
 

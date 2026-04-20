@@ -1134,8 +1134,8 @@ body {
 }
 
 @keyframes shine {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(100%); }
+    0% { opacity: 0.1; }
+    100% { opacity: 0.2; }
 }
 
 .achievement-badge-animated {
@@ -1154,9 +1154,9 @@ body {
 }
 
 @keyframes pulse-gold {
-    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    0% { box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); }
+    50% { box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3); }
+    100% { box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2); }
 }
 
 /* AI Analysis Modal */
@@ -1197,8 +1197,8 @@ body {
 }
 
 @keyframes pageEntrance {
-    from { opacity: 0; filter: blur(10px); }
-    to { opacity: 1; filter: blur(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* Staggered Dashboard Cards */
@@ -1271,3 +1271,108 @@ body.light-mode .nav-link.active {
     background: var(--accent);
     color: white;
 }
+
+/* ==========================================================================
+   NEXORA HOLOGRAPHIC DESIGN SYSTEM v1.0
+   ========================================================================== */
+
+:root {
+    --holo-shimmer: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 45%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.05) 55%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    --glow-emerald: 0 8px 15px rgba(16, 185, 129, 0.15);
+    --glow-ruby: 0 8px 15px rgba(239, 68, 68, 0.15);
+    --glow-indigo: 0 8px 15px rgba(99, 102, 241, 0.15);
+    --glow-amber: 0 8px 15px rgba(245, 158, 11, 0.15);
+}
+
+.nexora-holo-card {
+    position: relative;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease-out;
+}
+
+.nexora-holo-card:hover {
+    transform: translateY(-4px) scale(1.005);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Shimmer Light Leak Overlay */
+.nexora-holo-card::before {
+    content: '';
+    position: absolute;
+    top: -150%;
+    left: -150%;
+    width: 300%;
+    height: 300%;
+    background: var(--holo-shimmer);
+    transform: rotate(45deg);
+    transition: all 0.6s ease;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+}
+
+.nexora-holo-card:hover::before {
+    top: -50%;
+    left: -50%;
+    opacity: 1;
+}
+
+/* Neon Glow Utilities */
+.nexora-glow-emerald { border-bottom: 2px solid #10b981 !important; }
+.nexora-glow-emerald:hover { box-shadow: var(--glow-emerald), 0 10px 25px rgba(0, 0, 0, 0.3) !important; }
+
+.nexora-glow-ruby { border-bottom: 2px solid #ef4444 !important; }
+.nexora-glow-ruby:hover { box-shadow: var(--glow-ruby), 0 10px 25px rgba(0, 0, 0, 0.3) !important; }
+
+.nexora-glow-indigo { border-bottom: 2px solid #6366f1 !important; }
+.nexora-glow-indigo:hover { box-shadow: var(--glow-indigo), 0 10px 25px rgba(0, 0, 0, 0.3) !important; }
+
+.nexora-glow-amber { border-bottom: 2px solid #f59e0b !important; }
+.nexora-glow-amber:hover { box-shadow: var(--glow-amber), 0 10px 25px rgba(0, 0, 0, 0.3) !important; }
+
+/* 3D Content Depth */
+.nexora-holo-content {
+    position: relative;
+    z-index: 2;
+    padding: 1.5rem;
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+    text-rendering: optimizeLegibility;
+}
+
+/* Glass Buttons Enhancement */
+.btn-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Discarded flashy flicker for professional stability */
+
+.holographic-text {
+    background: linear-gradient(to right, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+

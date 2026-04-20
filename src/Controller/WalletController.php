@@ -20,15 +20,15 @@ use Symfony\Component\Mime\Address;
 class WalletController extends AbstractController
 {
     #[Route('/wallets', name: 'wallet_index', methods: ['GET'])]
-    public function index(WalletRepository $walletRepository, ActivityLogRepository $logRepository, \App\Repository\WalletGoalRepository $goalRepository, Request $request): Response
+    public function index(WalletRepository $walletRepository, ActivityLogRepository $logRepository, \App\Repository\WalletGoalRepository $goalRepository, EntityManagerInterface $entityManager, Request $request): Response
     {
         if (!$request->getSession()->get('role')) {
             return $this->redirectToRoute('app_login');
         }
 
         if ($request->getSession()->get('role') === 'USER') {
-            $walletId = $request->getSession()->get('logged_in_wallet_id');
-            $wallet = $walletRepository->find($walletId);
+            $user = $entityManager->getRepository(\App\Entity\User::class)->find((int)$request->getSession()->get('user_id'));
+            $wallet = $user ? $user->getWallet() : null;
             $wallets = $wallet ? [$wallet] : [];
             $totalBalance = $wallet ? (float)$wallet->getBalance() : 0;
             $recentLogs = []; // Cacher les logs pour le User

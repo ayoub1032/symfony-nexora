@@ -16,10 +16,10 @@ class Portfolio
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    #[Assert\NotNull(message: 'User ID is required.')]
-    #[Assert\Positive(message: 'User ID must be greater than zero.')]
-    private ?int $userId = null;
+    #[ORM\OneToOne(inversedBy: 'portfolio', targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'User is required.')]
+    private ?User $user = null;
 
     #[ORM\Column]
     #[Assert\NotNull(message: 'Total value is required.')]
@@ -40,14 +40,14 @@ class Portfolio
         return $this->id;
     }
 
-    public function getUserId(): ?int
+    public function getUser(): ?User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function setUserId(int $userId): self
+    public function setUser(?User $user): self
     {
-        $this->userId = $userId;
+        $this->user = $user;
 
         return $this;
     }
@@ -92,5 +92,18 @@ class Portfolio
         }
 
         return $this;
+    }
+
+    /**
+     * Recalculate totalValue from all PortfolioAssets.
+     * Call this after every BUY / SELL / P2P transaction.
+     */
+    public function recalculateTotalValue(): void
+    {
+        $total = 0.0;
+        foreach ($this->portfolioAssets as $pa) {
+            $total += $pa->getQuantity() * $pa->getAsset()->getValue();
+        }
+        $this->totalValue = $total;
     }
 }

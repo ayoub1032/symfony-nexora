@@ -15,10 +15,10 @@ class P2pContract
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    #[Assert\NotNull(message: 'Creator ID is required.')]
-    #[Assert\Positive(message: 'Creator ID must be greater than zero.')]
-    private ?int $creatorId = null;
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Creator is required.')]
+    private ?User $creator = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
@@ -45,8 +45,9 @@ class P2pContract
     #[Assert\Choice(choices: ['OPEN', 'ACCEPTED', 'COMPLETED', 'CANCELLED'], message: 'Invalid contract status.')]
     private ?string $status = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $acceptedBy = null;
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $acceptor = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $createdAt = null;
@@ -68,14 +69,14 @@ class P2pContract
         return $this->id;
     }
 
-    public function getCreatorId(): ?int
+    public function getCreator(): ?User
     {
-        return $this->creatorId;
+        return $this->creator;
     }
 
-    public function setCreatorId(int $creatorId): self
+    public function setCreator(User $creator): self
     {
-        $this->creatorId = $creatorId;
+        $this->creator = $creator;
         return $this;
     }
 
@@ -134,14 +135,14 @@ class P2pContract
         return $this;
     }
 
-    public function getAcceptedBy(): ?int
+    public function getAcceptor(): ?User
     {
-        return $this->acceptedBy;
+        return $this->acceptor;
     }
 
-    public function setAcceptedBy(?int $acceptedBy): self
+    public function setAcceptor(?User $acceptor): self
     {
-        $this->acceptedBy = $acceptedBy;
+        $this->acceptor = $acceptor;
         return $this;
     }
 

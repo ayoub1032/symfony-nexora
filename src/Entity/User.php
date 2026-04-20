@@ -40,6 +40,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Wallet::class)]
     private ?Wallet $wallet = null;
 
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: Portfolio::class, cascade: ['persist', 'remove'])]
+    private ?Portfolio $portfolio = null;
+
+    #[ORM\OneToOne(mappedBy: 'user', targetEntity: UserReputation::class, cascade: ['persist', 'remove'])]
+    private ?UserReputation $reputation = null;
+
     #[ORM\Column(length: 20)]
     private string $riskProfile = 'Balanced';
 
@@ -150,6 +156,38 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->wallet = $wallet;
+
+        return $this;
+    }
+
+    public function getPortfolio(): ?Portfolio
+    {
+        return $this->portfolio;
+    }
+
+    public function setPortfolio(?Portfolio $portfolio): self
+    {
+        if ($portfolio !== null && $portfolio->getUser() !== $this) {
+            $portfolio->setUser($this);
+        }
+
+        $this->portfolio = $portfolio;
+
+        return $this;
+    }
+
+    public function getReputation(): ?UserReputation
+    {
+        return $this->reputation;
+    }
+
+    public function setReputation(?UserReputation $reputation): self
+    {
+        if ($reputation !== null && $reputation->getUser() !== $this) {
+            $reputation->setUser($this);
+        }
+
+        $this->reputation = $reputation;
 
         return $this;
     }

@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Service\AssetPriceService;
 
 class AssetController extends AbstractController
 {
@@ -99,6 +100,21 @@ class AssetController extends AbstractController
         $entityManager->flush();
         $this->addFlash('success', 'Asset deleted successfully.');
 
+        return $this->redirectToRoute('asset_index');
+    }
+    #[Route('/market-assets/sync', name: 'asset_sync', methods: ['POST'])]
+    public function sync(AssetPriceService $priceService, Request $request): Response
+    {
+        if ($request->getSession()->get('role') !== 'ADMIN') {
+            $this->addFlash('danger', 'Reserved for Admin access.');
+            return $this->redirectToRoute('asset_index');
+        }
+
+        $updated = $priceService->syncAssetPrices();
+        $priceService->recalculatePortfolios();
+
+        $this->addFlash('success', sprintf('Successfully synced %d asset prices and recalculated portfolios!', $updated));
+        
         return $this->redirectToRoute('asset_index');
     }
 }

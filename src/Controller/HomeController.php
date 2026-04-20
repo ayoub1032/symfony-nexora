@@ -4,6 +4,8 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Entity\Wallet;
+use App\Entity\Portfolio;
+use App\Entity\UserReputation;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -167,8 +169,20 @@ class HomeController extends AbstractController
             $wallet = new Wallet();
             $wallet->setOwner($fullName);
             $wallet->setBalance('0.00');
+            $wallet->setCreatedAt(new \DateTime());
             $wallet->setUser($user);
             $user->setWallet($wallet);
+
+            $portfolio = new Portfolio();
+            $portfolio->setUser($user);
+            $portfolio->setTotalValue(0.0);
+
+            $reputation = new UserReputation();
+            $reputation->setUser($user);
+            $reputation->setCompletedContracts(0);
+            $reputation->setCanceledContracts(0);
+            $reputation->setTotalScore(0);
+            $reputation->setRatingCount(0);
 
             $userErrors = $validator->validate($user);
             $walletErrors = $validator->validate($wallet);
@@ -189,6 +203,8 @@ class HomeController extends AbstractController
 
             $entityManager->persist($user);
             $entityManager->persist($wallet);
+            $entityManager->persist($portfolio);
+            $entityManager->persist($reputation);
             $entityManager->flush();
 
             $this->addFlash('success', 'Account created successfully. You can log in now.');
